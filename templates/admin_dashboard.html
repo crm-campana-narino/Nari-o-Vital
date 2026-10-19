@@ -18,13 +18,11 @@
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         th { background-color: #ecf0f1; }
         .btn-export { background-color: #e67e22; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
+        .btn-mapa { background-color: #3498db; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 10px; margin-left: 10px;}
         
-        /* Estilos para el formulario de crear líder */
         .form-crear-lider { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .form-crear-lider input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; flex: 1; min-width: 150px; }
         .form-crear-lider button { padding: 10px 20px; background-color: #d35400; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .form-crear-lider button:hover { background-color: #e67e22; }
-        
         .mensaje-flash { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
     </style>
 </head>
@@ -34,14 +32,12 @@
         <a href="{{ url_for('logout') }}" class="logout">Salir</a>
     </div>
 
-    <!-- Mensajes de éxito o error -->
     {% with messages = get_flashed_messages() %}
       {% if messages %}
         <div class="mensaje-flash">{{ messages[0] }}</div>
       {% endif %}
     {% endwith %}
 
-    <!-- Tarjetas de Estadísticas -->
     <div class="kpis">
         <div class="kpi-card">
             <div class="kpi-number">{{ total }}</div>
@@ -57,7 +53,6 @@
         </div>
     </div>
 
-    <!-- Formulario para crear líderes -->
     <div class="card">
         <h4>Crear nuevo usuario para Líder</h4>
         <form class="form-crear-lider" method="POST" action="{{ url_for('crear_lider') }}">
@@ -67,7 +62,6 @@
         </form>
     </div>
 
-    <!-- Rendimiento del Equipo -->
     <div class="card">
         <h4>Rendimiento de los Líderes (Estructura 1-5-25)</h4>
         <table>
@@ -84,36 +78,36 @@
         </table>
     </div>
 
-    <!-- Base de Datos Centralizada con Edición y Eliminación -->
     <div class="card">
         <h4>Base de Datos Centralizada</h4>
-        <a href="{{ url_for('exportar') }}" class="btn-export">📥 Descargar Base de Datos (Excel)</a>
+        <a href="{{ url_for('exportar') }}" class="btn-export">📥 Descargar Excel</a>
+        <a href="{{ url_for('mapa') }}" class="btn-mapa">🗺️ Ver Mapa de Calor</a>
+        
         <table>
             <tr>
                 <th>Nombre</th>
+                <th>Cédula</th>
                 <th>Municipio</th>
                 <th>Rol</th>
                 <th>GPS</th>
                 <th>Subido por</th>
-                <th>Acciones</th> <!-- NUEVA COLUMNA -->
+                <th>Acciones</th>
             </tr>
             {% for c in contactos %}
             <tr>
                 <td>{{ c.nombre }}</td>
+                <td>{{ c.cedula }}</td>
                 <td>{{ c.municipio }}</td>
                 <td>{{ c.tipo }} {% if c.otro_tipo %}({{ c.otro_tipo }}){% endif %}</td>
                 <td>{% if c.latitud %}✅ Sí{% else %}❌ No{% endif %}</td>
                 <td>{{ c.creador.username if c.creador else 'Admin' }}</td>
                 <td style="white-space: nowrap;">
-                    <!-- Botón Editar -->
                     <a href="{{ url_for('editar_contacto', id=c.id) }}" style="background-color: #f39c12; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; font-size: 12px;">✏️ Editar</a>
-                    <!-- Botón Eliminar -->
                     <a href="{{ url_for('eliminar_contacto', id=c.id) }}" onclick="return confirm('¿Estás seguro de eliminar este contacto?');" style="background-color: #e74c3c; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; font-size: 12px;">🗑️ Eliminar</a>
                 </td>
             </tr>
             {% endfor %}
         </table>
     </div>
-
 </body>
 </html>
