@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, Res
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.pool import NullPool
 import os
 import csv
 import io
@@ -9,15 +10,16 @@ import io
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'clave_secreta_campana_narino'
 
+# ============================================================================
 # CONFIGURACIÓN DE LA BASE DE DATOS Y EL POOL DE CONEXIONES
+# ============================================================================
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///campana_central.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# NullPool evita que Render retenga conexiones abiertas y libera las que Supabase cierra
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,
-    'pool_recycle': 300,
-    'pool_size': 5,
-    'max_overflow': 2
+    'poolclass': NullPool,
+    'pool_pre_ping': True
 }
 
 db = SQLAlchemy(app)
