@@ -57,7 +57,7 @@
         </div>
     </div>
 
-    <!-- NUEVO: Formulario para crear líderes -->
+    <!-- Formulario para crear líderes -->
     <div class="card">
         <h4>Crear nuevo usuario para Líder</h4>
         <form class="form-crear-lider" method="POST" action="{{ url_for('crear_lider') }}">
@@ -84,7 +84,7 @@
         </table>
     </div>
 
-    <!-- Base de Datos Centralizada -->
+    <!-- Base de Datos Centralizada con Edición y Eliminación -->
     <div class="card">
         <h4>Base de Datos Centralizada</h4>
         <a href="{{ url_for('exportar') }}" class="btn-export">📥 Descargar Base de Datos (Excel)</a>
@@ -93,18 +93,23 @@
                 <th>Nombre</th>
                 <th>Municipio</th>
                 <th>Rol</th>
-                <th>Compromiso</th>
                 <th>GPS</th>
                 <th>Subido por</th>
+                <th>Acciones</th> <!-- NUEVA COLUMNA -->
             </tr>
             {% for c in contactos %}
             <tr>
                 <td>{{ c.nombre }}</td>
                 <td>{{ c.municipio }}</td>
                 <td>{{ c.tipo }} {% if c.otro_tipo %}({{ c.otro_tipo }}){% endif %}</td>
-                <td>{{ c.compromiso }}/3</td>
                 <td>{% if c.latitud %}✅ Sí{% else %}❌ No{% endif %}</td>
                 <td>{{ c.creador.username if c.creador else 'Admin' }}</td>
+                <td style="white-space: nowrap;">
+                    <!-- Botón Editar -->
+                    <a href="{{ url_for('editar_contacto', id=c.id) }}" style="background-color: #f39c12; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; font-size: 12px;">✏️ Editar</a>
+                    <!-- Botón Eliminar -->
+                    <a href="{{ url_for('eliminar_contacto', id=c.id) }}" onclick="return confirm('¿Estás seguro de eliminar este contacto?');" style="background-color: #e74c3c; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; font-size: 12px;">🗑️ Eliminar</a>
+                </td>
             </tr>
             {% endfor %}
         </table>
