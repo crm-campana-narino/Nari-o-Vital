@@ -163,7 +163,7 @@ def init_db():
             lider = Usuario(username='lider1', password_hash=generate_password_hash('lider123'), es_admin=False)
             db.session.add(lider)
             db.session.commit()
-            print("Base de datos creada. Admin: admin / admin123 | Líder: lider1 / lider123")
+            print("Base de datos creada. Admin: admin / admin123 | Lider: lider1 / lider123")
 
 if __name__ == '__main__':
     init_db()
