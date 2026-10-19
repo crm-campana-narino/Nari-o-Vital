@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -17,20 +17,11 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# FUNCIÓN PARA LIMPIAR COORDENADAS (Evita el problema de los puntos de miles)
 def limpiar_coordenada(valor):
-    if not valor:
-        return None
-    try:
-        # Quita las comas (por si acaso) y convierte a float
-        valor_limpio = str(valor).replace(',', '').strip()
-        return float(valor_limpio)
-    except ValueError:
-        return None
+    if not valor: return None
+    try: return float(str(valor).replace(',', '').strip())
+    except ValueError: return None
 
-# ============================================================================
-# MODELOS
-# ============================================================================
 class Usuario(UserMixin, db.Model):
     __tablename__ = 'usuario'
     id = db.Column(db.Integer, primary_key=True)
@@ -60,16 +51,11 @@ class Contacto(db.Model):
 def load_user(user_id):
     return Usuario.query.get(int(user_id))
 
-# ============================================================================
-# RUTAS
-# ============================================================================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = Usuario.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password_hash, password):
+        user = Usuario.query.filter_by(username=request.form.get('username')).first()
+        if user and check_password_hash(user.password_hash, request.form.get('password')):
             login_user(user)
             return redirect(url_for('dashboard'))
         flash('Usuario o contraseña incorrectos')
@@ -100,23 +86,36 @@ def dashboard():
         mis_contactos = Contacto.query.filter_by(creador_id=current_user.id).all()
         return render_template('dashboard.html', contactos=mis_contactos)
 
+@app.route('/mapa')
+@login_required
+def mapa():
+    if not current_user.es_admin: return "Acceso denegado", 403
+    return render_template('mapa.html')
+
+@app.route('/datos_mapa')
+@login_required
+def datos_mapa():
+    if not current_user.es_admin: return jsonify([])
+    contactos = Contacto.query.filter(Contacto.latitud.isnot(None)).all()
+    datos = [{"nombre": c.nombre, "lat": c.latitud, "lon": c.longitud, "tipo": c.tipo} for c in contactos]
+    return jsonify(datos)
+
 @app.route('/crear_lider', methods=['POST'])
 @login_required
 def crear_lider():
     if not current_user.es_admin: return "Acceso denegado", 403
     nuevo_usuario = request.form.get('nuevo_usuario')
-    nueva_clave = request.form.get('nueva_clave')
     if Usuario.query.filter_by(username=nuevo_usuario).first():
         flash(f'El usuario {nuevo_usuario} ya existe.')
     else:
         try:
-            user = Usuario(username=nuevo_usuario, password_hash=generate_password_hash(nueva_clave), es_admin=False)
+            user = Usuario(username=nuevo_usuario, password_hash=generate_password_hash(request.form.get('nueva_clave')), es_admin=False)
             db.session.add(user)
             db.session.commit()
             flash(f'Líder {nuevo_usuario} creado exitosamente.')
         except Exception as e:
             db.session.rollback()
-            flash(f'Error al crear el líder: {e}')
+            flash(f'Error: {e}')
     return redirect(url_for('dashboard'))
 
 @app.route('/eliminar_contacto/<int:id>')
@@ -126,7 +125,7 @@ def eliminar_contacto(id):
     contacto = Contacto.query.get_or_404(id)
     db.session.delete(contacto)
     db.session.commit()
-    flash('Contacto eliminado correctamente.')
+    flash('Contacto eliminado.')
     return redirect(url_for('dashboard'))
 
 @app.route('/editar_contacto/<int:id>', methods=['GET', 'POST'])
@@ -143,31 +142,20 @@ def editar_contacto(id):
         contacto.tipo = request.form.get('tipo')
         contacto.compromiso = int(request.form.get('compromiso'))
         db.session.commit()
-        flash('Contacto actualizado correctamente.')
+        flash('Contacto actualizado.')
         return redirect(url_for('dashboard'))
     return render_template('editar_contacto.html', contacto=contacto)
 
 @app.route('/registrar', methods=['POST'])
 @login_required
 def registrar():
-    # Limpiamos las coordenadas usando la nueva función
-    lat_limpia = limpiar_coordenada(request.form.get('latitud'))
-    lon_limpia = limpiar_coordenada(request.form.get('longitud'))
-
     nuevo_contacto = Contacto(
-        campana=request.form.get('campana'),
-        cedula=request.form.get('cedula'),
-        nombre=request.form.get('nombre'),
-        telefono=request.form.get('telefono'),
-        municipio=request.form.get('municipio'),
-        subregion=request.form.get('subregion'),
-        barrio_vereda=request.form.get('barrio'),
-        tipo=request.form.get('tipo'),
+        campana=request.form.get('campana'), cedula=request.form.get('cedula'), nombre=request.form.get('nombre'),
+        telefono=request.form.get('telefono'), municipio=request.form.get('municipio'), subregion=request.form.get('subregion'),
+        barrio_vereda=request.form.get('barrio'), tipo=request.form.get('tipo'),
         otro_tipo=request.form.get('otro_tipo') if request.form.get('tipo') == 'Otro' else None,
-        compromiso=int(request.form.get('compromiso')),
-        latitud=lat_limpia, # Usamos la coordenada limpia
-        longitud=lon_limpia, # Usamos la coordenada limpia
-        creador_id=current_user.id
+        compromiso=int(request.form.get('compromiso')), latitud=limpiar_coordenada(request.form.get('latitud')), 
+        longitud=limpiar_coordenada(request.form.get('longitud')), creador_id=current_user.id
     )
     db.session.add(nuevo_contacto)
     db.session.commit()
