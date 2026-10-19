@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, redirect, url_for, flash, Res
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.pool import NullPool
 import os
 import csv
 import io
@@ -10,17 +9,10 @@ import io
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'clave_secreta_campana_narino'
 
-# ============================================================================
-# CONFIGURACIÓN DE LA BASE DE DATOS Y EL POOL DE CONEXIONES
-# ============================================================================
+# CONFIGURACIÓN DE LA BASE DE DATOS
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///campana_central.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# NullPool evita que Render retenga conexiones abiertas y libera las que Supabase cierra
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'poolclass': NullPool,
-    'pool_pre_ping': True
-}
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -28,15 +20,17 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 # ============================================================================
-# MODELOS
+# MODELOS (Asegurando el nombre correcto de las tablas)
 # ============================================================================
 class Usuario(UserMixin, db.Model):
+    __tablename__ = 'usuario'  # Forzamos el nombre de la tabla
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     es_admin = db.Column(db.Boolean, default=False)
 
 class Contacto(db.Model):
+    __tablename__ = 'contacto'
     id = db.Column(db.Integer, primary_key=True)
     campana = db.Column(db.String(100), nullable=False)
     nombre = db.Column(db.String(100), nullable=False)
@@ -82,7 +76,6 @@ def logout():
 def dashboard():
     if current_user.es_admin:
         todos_contactos = Contacto.query.all()
-        
         total_contactos = len(todos_contactos)
         total_lideres = sum(1 for c in todos_contactos if c.tipo in ['Lider Campaña', 'Lider Comunal'])
         total_electores = sum(1 for c in todos_contactos if c.tipo == 'Elector')
@@ -93,10 +86,8 @@ def dashboard():
             conteo_lideres[nombre_lider] = conteo_lideres.get(nombre_lider, 0) + 1
             
         return render_template('admin_dashboard.html', 
-                               contactos=todos_contactos, 
-                               total=total_contactos, 
-                               lideres=total_lideres, 
-                               electores=total_electores,
+                               contactos=todos_contactos, total=total_contactos, 
+                               lideres=total_lideres, electores=total_electores,
                                conteo_lideres=conteo_lideres)
     else:
         mis_contactos = Contacto.query.filter_by(creador_id=current_user.id).all()
@@ -136,10 +127,8 @@ def exportar():
         return "Acceso denegado", 403
         
     contactos = Contacto.query.all()
-    
     output = io.StringIO()
     writer = csv.writer(output, delimiter=';')
-    
     writer.writerow(['Campaña', 'Nombre', 'Teléfono', 'Municipio', 'Subregión', 'Barrio', 'Tipo', 'Otro Tipo', 'Compromiso', 'Latitud', 'Longitud', 'Registrado por'])
     
     for c in contactos:
@@ -154,19 +143,18 @@ def exportar():
     return response
 
 # ============================================================================
-# INICIALIZACIÓN
+# INICIALIZACIÓN FORZADA (Fuera del if __name__)
 # ============================================================================
-def init_db():
-    with app.app_context():
-        db.create_all()
-        if not Usuario.query.filter_by(username='admin').first():
-            admin = Usuario(username='admin', password_hash=generate_password_hash('admin123'), es_admin=True)
-            db.session.add(admin)
-            lider = Usuario(username='lider1', password_hash=generate_password_hash('lider123'), es_admin=False)
-            db.session.add(lider)
-            db.session.commit()
-            print("Base de datos creada. Admin: admin / admin123 | Lider: lider1 / lider123")
+# Esto asegura que Render cree las tablas y el usuario admin al arrancar
+with app.app_context():
+    db.create_all()
+    if not Usuario.query.filter_by(username='admin').first():
+        admin = Usuario(username='admin', password_hash=generate_password_hash('admin123'), es_admin=True)
+        db.session.add(admin)
+        lider = Usuario(username='lider1', password_hash=generate_password_hash('lider123'), es_admin=False)
+        db.session.add(lider)
+        db.session.commit()
+        print("Base de datos inicializada correctamente en Render.")
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
