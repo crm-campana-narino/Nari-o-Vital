@@ -8,7 +8,6 @@ import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'clave_secreta_campana_narino'
-
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///campana_central.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
@@ -92,13 +91,11 @@ def dashboard():
         mis_contactos = Contacto.query.filter_by(creador_id=current_user.id).all()
         return render_template('dashboard.html', contactos=mis_contactos)
 
-# NUEVA RUTA: Crear un nuevo líder desde el panel de Admin
 @app.route('/crear_lider', methods=['POST'])
 @login_required
 def crear_lider():
     if not current_user.es_admin:
         return "Acceso denegado", 403
-        
     nuevo_usuario = request.form.get('nuevo_usuario')
     nueva_clave = request.form.get('nueva_clave')
     
@@ -113,8 +110,43 @@ def crear_lider():
         except Exception as e:
             db.session.rollback()
             flash(f'Error al crear el líder: {e}')
-            
     return redirect(url_for('dashboard'))
+
+# --- NUEVAS RUTAS DE EDICIÓN Y ELIMINACIÓN ---
+
+@app.route('/eliminar_contacto/<int:id>')
+@login_required
+def eliminar_contacto(id):
+    if not current_user.es_admin:
+        return "Acceso denegado", 403
+    contacto = Contacto.query.get_or_404(id)
+    db.session.delete(contacto)
+    db.session.commit()
+    flash('Contacto eliminado correctamente.')
+    return redirect(url_for('dashboard'))
+
+@app.route('/editar_contacto/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_contacto(id):
+    if not current_user.es_admin:
+        return "Acceso denegado", 403
+    contacto = Contacto.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        contacto.nombre = request.form.get('nombre')
+        contacto.telefono = request.form.get('telefono')
+        contacto.municipio = request.form.get('municipio')
+        contacto.barrio_vereda = request.form.get('barrio_vereda')
+        contacto.tipo = request.form.get('tipo')
+        contacto.compromiso = int(request.form.get('compromiso'))
+        
+        db.session.commit()
+        flash('Contacto actualizado correctamente.')
+        return redirect(url_for('dashboard'))
+        
+    return render_template('editar_contacto.html', contacto=contacto)
+
+# ---------------------------------------------
 
 @app.route('/registrar', methods=['POST'])
 @login_required
@@ -148,7 +180,6 @@ def registrar():
 def exportar():
     if not current_user.es_admin:
         return "Acceso denegado", 403
-        
     contactos = Contacto.query.all()
     output = io.StringIO()
     writer = csv.writer(output, delimiter=';')
