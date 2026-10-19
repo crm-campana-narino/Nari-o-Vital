@@ -9,7 +9,6 @@ import io
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'clave_secreta_campana_narino'
 
-# CONFIGURACIÓN DE LA BASE DE DATOS
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///campana_central.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
@@ -93,6 +92,30 @@ def dashboard():
         mis_contactos = Contacto.query.filter_by(creador_id=current_user.id).all()
         return render_template('dashboard.html', contactos=mis_contactos)
 
+# NUEVA RUTA: Crear un nuevo líder desde el panel de Admin
+@app.route('/crear_lider', methods=['POST'])
+@login_required
+def crear_lider():
+    if not current_user.es_admin:
+        return "Acceso denegado", 403
+        
+    nuevo_usuario = request.form.get('nuevo_usuario')
+    nueva_clave = request.form.get('nueva_clave')
+    
+    if Usuario.query.filter_by(username=nuevo_usuario).first():
+        flash(f'El usuario {nuevo_usuario} ya existe.')
+    else:
+        try:
+            user = Usuario(username=nuevo_usuario, password_hash=generate_password_hash(nueva_clave), es_admin=False)
+            db.session.add(user)
+            db.session.commit()
+            flash(f'Líder {nuevo_usuario} creado exitosamente.')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear el líder: {e}')
+            
+    return redirect(url_for('dashboard'))
+
 @app.route('/registrar', methods=['POST'])
 @login_required
 def registrar():
@@ -147,18 +170,11 @@ def exportar():
 # ============================================================================
 with app.app_context():
     db.create_all()
-    
     try:
         if not Usuario.query.filter_by(username='admin').first():
             admin = Usuario(username='admin', password_hash=generate_password_hash('admin123'), es_admin=True)
             db.session.add(admin)
             db.session.commit()
-            
-        if not Usuario.query.filter_by(username='lider1').first():
-            lider = Usuario(username='lider1', password_hash=generate_password_hash('lider123'), es_admin=False)
-            db.session.add(lider)
-            db.session.commit()
-            
     except Exception as e:
         db.session.rollback()
 
