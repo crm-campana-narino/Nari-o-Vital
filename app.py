@@ -17,6 +17,17 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+# FUNCIÓN PARA LIMPIAR COORDENADAS (Evita el problema de los puntos de miles)
+def limpiar_coordenada(valor):
+    if not valor:
+        return None
+    try:
+        # Quita las comas (por si acaso) y convierte a float
+        valor_limpio = str(valor).replace(',', '').strip()
+        return float(valor_limpio)
+    except ValueError:
+        return None
+
 # ============================================================================
 # MODELOS
 # ============================================================================
@@ -31,7 +42,7 @@ class Contacto(db.Model):
     __tablename__ = 'contacto'
     id = db.Column(db.Integer, primary_key=True)
     campana = db.Column(db.String(100), nullable=False)
-    cedula = db.Column(db.String(20)) # NUEVO CAMPO
+    cedula = db.Column(db.String(20))
     nombre = db.Column(db.String(100), nullable=False)
     telefono = db.Column(db.String(20))
     municipio = db.Column(db.String(100), nullable=False)
@@ -139,9 +150,13 @@ def editar_contacto(id):
 @app.route('/registrar', methods=['POST'])
 @login_required
 def registrar():
+    # Limpiamos las coordenadas usando la nueva función
+    lat_limpia = limpiar_coordenada(request.form.get('latitud'))
+    lon_limpia = limpiar_coordenada(request.form.get('longitud'))
+
     nuevo_contacto = Contacto(
         campana=request.form.get('campana'),
-        cedula=request.form.get('cedula'), # NUEVO CAMPO
+        cedula=request.form.get('cedula'),
         nombre=request.form.get('nombre'),
         telefono=request.form.get('telefono'),
         municipio=request.form.get('municipio'),
@@ -150,8 +165,8 @@ def registrar():
         tipo=request.form.get('tipo'),
         otro_tipo=request.form.get('otro_tipo') if request.form.get('tipo') == 'Otro' else None,
         compromiso=int(request.form.get('compromiso')),
-        latitud=float(request.form.get('latitud')) if request.form.get('latitud') else None,
-        longitud=float(request.form.get('longitud')) if request.form.get('longitud') else None,
+        latitud=lat_limpia, # Usamos la coordenada limpia
+        longitud=lon_limpia, # Usamos la coordenada limpia
         creador_id=current_user.id
     )
     db.session.add(nuevo_contacto)
