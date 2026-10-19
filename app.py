@@ -31,6 +31,7 @@ class Contacto(db.Model):
     __tablename__ = 'contacto'
     id = db.Column(db.Integer, primary_key=True)
     campana = db.Column(db.String(100), nullable=False)
+    cedula = db.Column(db.String(20)) # NUEVO CAMPO
     nombre = db.Column(db.String(100), nullable=False)
     telefono = db.Column(db.String(20))
     municipio = db.Column(db.String(100), nullable=False)
@@ -83,10 +84,7 @@ def dashboard():
             nombre_lider = c.creador.username if c.creador else "Desconocido"
             conteo_lideres[nombre_lider] = conteo_lideres.get(nombre_lider, 0) + 1
             
-        return render_template('admin_dashboard.html', 
-                               contactos=todos_contactos, total=total_contactos, 
-                               lideres=total_lideres, electores=total_electores,
-                               conteo_lideres=conteo_lideres)
+        return render_template('admin_dashboard.html', contactos=todos_contactos, total=total_contactos, lideres=total_lideres, electores=total_electores, conteo_lideres=conteo_lideres)
     else:
         mis_contactos = Contacto.query.filter_by(creador_id=current_user.id).all()
         return render_template('dashboard.html', contactos=mis_contactos)
@@ -94,11 +92,9 @@ def dashboard():
 @app.route('/crear_lider', methods=['POST'])
 @login_required
 def crear_lider():
-    if not current_user.es_admin:
-        return "Acceso denegado", 403
+    if not current_user.es_admin: return "Acceso denegado", 403
     nuevo_usuario = request.form.get('nuevo_usuario')
     nueva_clave = request.form.get('nueva_clave')
-    
     if Usuario.query.filter_by(username=nuevo_usuario).first():
         flash(f'El usuario {nuevo_usuario} ya existe.')
     else:
@@ -112,13 +108,10 @@ def crear_lider():
             flash(f'Error al crear el líder: {e}')
     return redirect(url_for('dashboard'))
 
-# --- NUEVAS RUTAS DE EDICIÓN Y ELIMINACIÓN ---
-
 @app.route('/eliminar_contacto/<int:id>')
 @login_required
 def eliminar_contacto(id):
-    if not current_user.es_admin:
-        return "Acceso denegado", 403
+    if not current_user.es_admin: return "Acceso denegado", 403
     contacto = Contacto.query.get_or_404(id)
     db.session.delete(contacto)
     db.session.commit()
@@ -128,46 +121,37 @@ def eliminar_contacto(id):
 @app.route('/editar_contacto/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_contacto(id):
-    if not current_user.es_admin:
-        return "Acceso denegado", 403
+    if not current_user.es_admin: return "Acceso denegado", 403
     contacto = Contacto.query.get_or_404(id)
-    
     if request.method == 'POST':
+        contacto.cedula = request.form.get('cedula')
         contacto.nombre = request.form.get('nombre')
         contacto.telefono = request.form.get('telefono')
         contacto.municipio = request.form.get('municipio')
         contacto.barrio_vereda = request.form.get('barrio_vereda')
         contacto.tipo = request.form.get('tipo')
         contacto.compromiso = int(request.form.get('compromiso'))
-        
         db.session.commit()
         flash('Contacto actualizado correctamente.')
         return redirect(url_for('dashboard'))
-        
     return render_template('editar_contacto.html', contacto=contacto)
-
-# ---------------------------------------------
 
 @app.route('/registrar', methods=['POST'])
 @login_required
 def registrar():
-    campana = request.form.get('campana')
-    nombre = request.form.get('nombre')
-    telefono = request.form.get('telefono')
-    municipio = request.form.get('municipio')
-    subregion = request.form.get('subregion')
-    barrio = request.form.get('barrio')
-    tipo = request.form.get('tipo')
-    otro_tipo = request.form.get('otro_tipo') if tipo == 'Otro' else None
-    compromiso = request.form.get('compromiso')
-    lat = request.form.get('latitud')
-    lon = request.form.get('longitud')
-
     nuevo_contacto = Contacto(
-        campana=campana, nombre=nombre, telefono=telefono, 
-        municipio=municipio, subregion=subregion, barrio_vereda=barrio, 
-        tipo=tipo, otro_tipo=otro_tipo, compromiso=int(compromiso), 
-        latitud=float(lat) if lat else None, longitud=float(lon) if lon else None,
+        campana=request.form.get('campana'),
+        cedula=request.form.get('cedula'), # NUEVO CAMPO
+        nombre=request.form.get('nombre'),
+        telefono=request.form.get('telefono'),
+        municipio=request.form.get('municipio'),
+        subregion=request.form.get('subregion'),
+        barrio_vereda=request.form.get('barrio'),
+        tipo=request.form.get('tipo'),
+        otro_tipo=request.form.get('otro_tipo') if request.form.get('tipo') == 'Otro' else None,
+        compromiso=int(request.form.get('compromiso')),
+        latitud=float(request.form.get('latitud')) if request.form.get('latitud') else None,
+        longitud=float(request.form.get('longitud')) if request.form.get('longitud') else None,
         creador_id=current_user.id
     )
     db.session.add(nuevo_contacto)
@@ -178,36 +162,19 @@ def registrar():
 @app.route('/exportar')
 @login_required
 def exportar():
-    if not current_user.es_admin:
-        return "Acceso denegado", 403
+    if not current_user.es_admin: return "Acceso denegado", 403
     contactos = Contacto.query.all()
     output = io.StringIO()
     writer = csv.writer(output, delimiter=';')
-    writer.writerow(['Campaña', 'Nombre', 'Teléfono', 'Municipio', 'Subregión', 'Barrio', 'Tipo', 'Otro Tipo', 'Compromiso', 'Latitud', 'Longitud', 'Registrado por'])
-    
+    writer.writerow(['Campaña', 'Cédula', 'Nombre', 'Teléfono', 'Municipio', 'Subregión', 'Barrio', 'Tipo', 'Otro Tipo', 'Compromiso', 'Latitud', 'Longitud', 'Registrado por'])
     for c in contactos:
-        writer.writerow([
-            c.campana, c.nombre, c.telefono, c.municipio, c.subregion, 
-            c.barrio_vereda, c.tipo, c.otro_tipo, c.compromiso, 
-            c.latitud, c.longitud, c.creador.username if c.creador else "Admin"
-        ])
-    
+        writer.writerow([c.campana, c.cedula, c.nombre, c.telefono, c.municipio, c.subregion, c.barrio_vereda, c.tipo, c.otro_tipo, c.compromiso, c.latitud, c.longitud, c.creador.username if c.creador else "Admin"])
     response = Response(output.getvalue(), mimetype='text/csv')
     response.headers["Content-Disposition"] = "attachment; filename=Base_Datos_Campana.csv"
     return response
 
-# ============================================================================
-# INICIALIZACIÓN
-# ============================================================================
 with app.app_context():
     db.create_all()
-    try:
-        if not Usuario.query.filter_by(username='admin').first():
-            admin = Usuario(username='admin', password_hash=generate_password_hash('admin123'), es_admin=True)
-            db.session.add(admin)
-            db.session.commit()
-    except Exception as e:
-        db.session.rollback()
 
 if __name__ == '__main__':
     app.run(debug=True)
