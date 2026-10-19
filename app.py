@@ -20,10 +20,10 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 # ============================================================================
-# MODELOS (Asegurando el nombre correcto de las tablas)
+# MODELOS
 # ============================================================================
 class Usuario(UserMixin, db.Model):
-    __tablename__ = 'usuario'  # Forzamos el nombre de la tabla
+    __tablename__ = 'usuario'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
@@ -143,18 +143,29 @@ def exportar():
     return response
 
 # ============================================================================
-# INICIALIZACIÓN FORZADA (Fuera del if __name__)
+# INICIALIZACIÓN SEGURA
 # ============================================================================
-# Esto asegura que Render cree las tablas y el usuario admin al arrancar
 with app.app_context():
     db.create_all()
-    if not Usuario.query.filter_by(username='admin').first():
-        admin = Usuario(username='admin', password_hash=generate_password_hash('admin123'), es_admin=True)
-        db.session.add(admin)
-        lider = Usuario(username='lider1', password_hash=generate_password_hash('lider123'), es_admin=False)
-        db.session.add(lider)
-        db.session.commit()
-        print("Base de datos inicializada correctamente en Render.")
+    
+    try:
+        # Verificar si el admin existe
+        if not Usuario.query.filter_by(username='admin').first():
+            admin = Usuario(username='admin', password_hash=generate_password_hash('admin123'), es_admin=True)
+            db.session.add(admin)
+            db.session.commit()
+            print("Usuario admin creado.")
+            
+        # Verificar si el lider1 existe
+        if not Usuario.query.filter_by(username='lider1').first():
+            lider = Usuario(username='lider1', password_hash=generate_password_hash('lider123'), es_admin=False)
+            db.session.add(lider)
+            db.session.commit()
+            print("Usuario lider1 creado.")
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"Base de datos lista. Detalle: {e}")
 
 if __name__ == '__main__':
     app.run(debug=True)
