@@ -1,4 +1,4 @@
-﻿from flask import Flask, render_template, request, redirect, url_for, flash, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,8 +8,17 @@ import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'clave_secreta_campana_narino'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///campana_central.db'
+
+# CONFIGURACIÓN DE LA BASE DE DATOS Y EL POOL DE CONEXIONES
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///campana_central.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+    'pool_size': 5,
+    'max_overflow': 2
+}
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -70,15 +79,12 @@ def logout():
 @login_required
 def dashboard():
     if current_user.es_admin:
-        # Lógica para el Administrador
         todos_contactos = Contacto.query.all()
         
-        # Estadísticas
         total_contactos = len(todos_contactos)
         total_lideres = sum(1 for c in todos_contactos if c.tipo in ['Lider Campaña', 'Lider Comunal'])
         total_electores = sum(1 for c in todos_contactos if c.tipo == 'Elector')
         
-        # Conteo por líder
         conteo_lideres = {}
         for c in todos_contactos:
             nombre_lider = c.creador.username if c.creador else "Desconocido"
@@ -91,14 +97,12 @@ def dashboard():
                                electores=total_electores,
                                conteo_lideres=conteo_lideres)
     else:
-        # Lógica para el Líder normal
         mis_contactos = Contacto.query.filter_by(creador_id=current_user.id).all()
         return render_template('dashboard.html', contactos=mis_contactos)
 
 @app.route('/registrar', methods=['POST'])
 @login_required
 def registrar():
-    # ... (igual que antes)
     campana = request.form.get('campana')
     nombre = request.form.get('nombre')
     telefono = request.form.get('telefono')
@@ -123,7 +127,6 @@ def registrar():
     flash('Contacto registrado exitosamente')
     return redirect(url_for('dashboard'))
 
-# RUTA DE EXPORTACIÓN A EXCEL (CSV)
 @app.route('/exportar')
 @login_required
 def exportar():
@@ -132,11 +135,9 @@ def exportar():
         
     contactos = Contacto.query.all()
     
-    # Crear el archivo CSV en memoria
     output = io.StringIO()
-    writer = csv.writer(output, delimiter=';') # Usamos punto y coma para que Excel en español lo lea bien
+    writer = csv.writer(output, delimiter=';')
     
-    # Cabeceras
     writer.writerow(['Campaña', 'Nombre', 'Teléfono', 'Municipio', 'Subregión', 'Barrio', 'Tipo', 'Otro Tipo', 'Compromiso', 'Latitud', 'Longitud', 'Registrado por'])
     
     for c in contactos:
@@ -146,11 +147,13 @@ def exportar():
             c.latitud, c.longitud, c.creador.username if c.creador else "Admin"
         ])
     
-    # Preparar respuesta
     response = Response(output.getvalue(), mimetype='text/csv')
     response.headers["Content-Disposition"] = "attachment; filename=Base_Datos_Campana.csv"
     return response
 
+# ============================================================================
+# INICIALIZACIÓN
+# ============================================================================
 def init_db():
     with app.app_context():
         db.create_all()
