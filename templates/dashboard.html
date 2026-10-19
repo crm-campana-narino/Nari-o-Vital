@@ -17,7 +17,7 @@
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
         .gps-status { font-size: 12px; color: green; margin-top: 5px; }
-        #div-otro-tipo { display: none; } /* Oculto por defecto */
+        #div-otro-tipo { display: none; }
     </style>
 </head>
 <body>
@@ -36,15 +36,16 @@
         <h4>Registrar Nuevo Contacto</h4>
         <form method="POST" action="{{ url_for('registrar') }}">
             
-            <!-- IDENTIFICACIÓN DE LA CAMPAÑA -->
-            <input type="text" name="campana" placeholder="Campaña (Ej: Ciro a la Asamblea)" value="Base de apoyo Campaña Ciro a la Asamblea" required>
-
+            <input type="text" name="campana" value="Base de apoyo Campaña Ciro a la Asamblea" required>
             <input type="text" name="nombre" placeholder="Nombre completo" required>
+            
+            <!-- CAMPO CÉDULA AGREGADO AQUÍ -->
+            <input type="text" name="cedula" placeholder="Número de cédula" required>
+            
             <input type="tel" name="telefono" placeholder="Teléfono (Opcional)">
             
             <select name="municipio" id="municipio" required onchange="actualizarSubregion()">
                 <option value="">Seleccione un Municipio...</option>
-                <!-- Lista de municipios en orden alfabético -->
                 <option value="Albán (San José)">Albán (San José)</option>
                 <option value="Aldana">Aldana</option>
                 <option value="Ancuyá">Ancuyá</option>
@@ -111,10 +112,8 @@
             </select>
 
             <input type="text" name="subregion" id="subregion" placeholder="Subregión (Auto)" readonly required>
-
             <input type="text" name="barrio" placeholder="Barrio / Vereda / Corregimiento" required>
             
-            <!-- ROLES Y SECTORES -->
             <select name="tipo" id="tipo" onchange="mostrarOtro()">
                 <option value="Elector">Elector / Votante (Base)</option>
                 <option value="Lider Campaña">Líder de Campaña (Estructura 1-5-25)</option>
@@ -133,7 +132,6 @@
                 <option value="Otro">Otro</option>
             </select>
 
-            <!-- CASILLA PARA ESCRIBIR EL "OTRO" -->
             <div id="div-otro-tipo">
                 <input type="text" name="otro_tipo" placeholder="¿Cuál es el rol o sector? (Especifique)">
             </div>
@@ -159,23 +157,16 @@
         <table>
             <tr>
                 <th>Nombre</th>
+                <th>Cédula</th> <!-- Nueva columna en la tabla -->
                 <th>Municipio</th>
-                <th>Barrio</th>
                 <th>Rol</th>
-                {% if current_user.es_admin %}<th>Creado por</th>{% endif %}
             </tr>
             {% for c in contactos %}
             <tr>
                 <td>{{ c.nombre }}</td>
+                <td>{{ c.cedula }}</td> <!-- Nueva celda -->
                 <td>{{ c.municipio }}</td>
-                <td>{{ c.barrio_vereda }}</td>
-                <td>
-                    {{ c.tipo }}
-                    {% if c.tipo == 'Otro' and c.otro_tipo %}
-                        ({{ c.otro_tipo }})
-                    {% endif %}
-                </td>
-                {% if current_user.es_admin %}<td>{{ c.creador.username }}</td>{% endif %}
+                <td>{{ c.tipo }}</td>
             </tr>
             {% endfor %}
         </table>
@@ -200,22 +191,15 @@
         function actualizarSubregion() {
             const municipio = document.getElementById('municipio').value;
             const campoSubregion = document.getElementById('subregion');
-            if (municipio && subregiones[municipio]) {
-                campoSubregion.value = subregiones[municipio];
-            } else {
-                campoSubregion.value = "";
-            }
+            if (municipio && subregiones[municipio]) { campoSubregion.value = subregiones[municipio]; } 
+            else { campoSubregion.value = ""; }
         }
 
         function mostrarOtro() {
             const tipo = document.getElementById('tipo').value;
             const divOtro = document.getElementById('div-otro-tipo');
-            if (tipo === 'Otro') {
-                divOtro.style.display = 'block';
-            } else {
-                divOtro.style.display = 'none';
-                divOtro.querySelector('input').value = ''; // Limpiar si cambia de opinión
-            }
+            if (tipo === 'Otro') { divOtro.style.display = 'block'; } 
+            else { divOtro.style.display = 'none'; divOtro.querySelector('input').value = ''; }
         }
 
         function obtenerUbicacion() {
@@ -228,13 +212,9 @@
                         document.getElementById('longitud').value = position.coords.longitude;
                         status.innerText = "✅ Coordenadas capturadas correctamente.";
                     },
-                    (error) => {
-                        status.innerText = "❌ Error al capturar GPS.";
-                    }
+                    (error) => { status.innerText = "❌ Error al capturar GPS."; }
                 );
-            } else {
-                status.innerText = "❌ Tu navegador no soporta GPS.";
-            }
+            } else { status.innerText = "❌ Tu navegador no soporta GPS."; }
         }
     </script>
 </body>
