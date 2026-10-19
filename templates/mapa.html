@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa en Tiempo Real</title>
+    <!-- Cargamos la librería de mapas Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        .header { position: absolute; top: 10px; left: 50px; z-index: 1000; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .btn { background: #2c3e50; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="{{ url_for('dashboard') }}" class="btn">Volver al Panel</a>
+        <h3 style="margin: 10px 0 0 0;">Mapa de Calor de Contactos</h3>
+    </div>
+    <div id="map"></div>
+
+    <script>
+        // Inicializar el mapa centrado en Nariño/Pasto
+        var map = L.map('map').setView([1.2136, -77.2811], 10);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Traer los datos desde Python
+        fetch('/datos_mapa')
+            .then(response => response.json())
+            .then(data => {
+                var heatPoints = [];
+                
+                data.forEach(function(contacto) {
+                    if (contacto.lat && contacto.lon) {
+                        // Añadir al mapa de calor
+                        heatPoints.push([contacto.lat, contacto.lon, 1.0]);
+                        
+                        // Añadir un marcador para ver el nombre
+                        L.circleMarker([contacto.lat, contacto.lon], {
+                            radius: 5, color: '#007bff', fillOpacity: 0.8
+                        }).bindPopup("<b>" + contacto.nombre + "</b><br>" + contacto.tipo).addTo(map);
+                    }
+                });
+
+                // Dibujar el mapa de calor (Heatmap)
+                if (heatPoints.length > 0) {
+                    L.heatLayer(heatPoints, {
+                        radius: 25, blur: 15, maxZoom: 14,
+                        gradient: {0.2: 'blue', 0.4: 'lime', 0.6: 'yellow', 0.8: 'orange', 1.0: 'red'}
+                    }).addTo(map);
+                }
+            });
+    </script>
+</body>
+</html>
