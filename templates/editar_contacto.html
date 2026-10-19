@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Contacto</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        .btn-cancel { background-color: #95a5a6; text-align: center; display: block; text-decoration: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3>Editar Contacto</h3>
+        <form method="POST">
+            <label>Nombre:</label>
+            <input type="text" name="nombre" value="{{ contacto.nombre }}" required>
+            
+            <label>Teléfono:</label>
+            <input type="text" name="telefono" value="{{ contacto.telefono }}">
+            
+            <label>Municipio:</label>
+            <input type="text" name="municipio" value="{{ contacto.municipio }}" required>
+            
+            <label>Barrio / Vereda:</label>
+            <input type="text" name="barrio_vereda" value="{{ contacto.barrio_vereda }}" required>
+            
+            <label>Rol:</label>
+            <select name="tipo">
+                <option value="Elector" {% if contacto.tipo == 'Elector' %}selected{% endif %}>Elector</option>
+                <option value="Lider Campaña" {% if contacto.tipo == 'Lider Campaña' %}selected{% endif %}>Líder de Campaña</option>
+                <option value="Lider Comunal" {% if contacto.tipo == 'Lider Comunal' %}selected{% endif %}>Líder Social / JAC</option>
+                <option value="Docente" {% if contacto.tipo == 'Docente' %}selected{% endif %}>Docente</option>
+                <option value="Joven" {% if contacto.tipo == 'Joven' %}selected{% endif %}>Joven</option>
+            </select>
+
+            <label>Compromiso:</label>
+            <select name="compromiso">
+                <option value="1" {% if contacto.compromiso == 1 %}selected{% endif %}>Bajo</option>
+                <option value="2" {% if contacto.compromiso == 2 %}selected{% endif %}>Medio</option>
+                <option value="3" {% if contacto.compromiso == 3 %}selected{% endif %}>Alto</option>
+            </select>
+
+            <button type="submit">Guardar Cambios</button>
+            <a href="{{ url_for('dashboard') }}" class="btn-cancel" style="color: white; padding: 10px; border-radius: 5px;">Cancelar</a>
+        </form>
+    </div>
+</body>
+</html>
