@@ -18,6 +18,14 @@
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         th { background-color: #ecf0f1; }
         .btn-export { background-color: #e67e22; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
+        
+        /* Estilos para el formulario de crear líder */
+        .form-crear-lider { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .form-crear-lider input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; flex: 1; min-width: 150px; }
+        .form-crear-lider button { padding: 10px 20px; background-color: #d35400; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .form-crear-lider button:hover { background-color: #e67e22; }
+        
+        .mensaje-flash { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -26,6 +34,14 @@
         <a href="{{ url_for('logout') }}" class="logout">Salir</a>
     </div>
 
+    <!-- Mensajes de éxito o error -->
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="mensaje-flash">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Tarjetas de Estadísticas -->
     <div class="kpis">
         <div class="kpi-card">
             <div class="kpi-number">{{ total }}</div>
@@ -41,6 +57,17 @@
         </div>
     </div>
 
+    <!-- NUEVO: Formulario para crear líderes -->
+    <div class="card">
+        <h4>Crear nuevo usuario para Líder</h4>
+        <form class="form-crear-lider" method="POST" action="{{ url_for('crear_lider') }}">
+            <input type="text" name="nuevo_usuario" placeholder="Usuario (ej. lider_comuna1)" required>
+            <input type="text" name="nueva_clave" placeholder="Contraseña" required>
+            <button type="submit">Crear Líder</button>
+        </form>
+    </div>
+
+    <!-- Rendimiento del Equipo -->
     <div class="card">
         <h4>Rendimiento de los Líderes (Estructura 1-5-25)</h4>
         <table>
@@ -57,6 +84,7 @@
         </table>
     </div>
 
+    <!-- Base de Datos Centralizada -->
     <div class="card">
         <h4>Base de Datos Centralizada</h4>
         <a href="{{ url_for('exportar') }}" class="btn-export">📥 Descargar Base de Datos (Excel)</a>
@@ -81,5 +109,6 @@
             {% endfor %}
         </table>
     </div>
+
 </body>
 </html>
