@@ -3,112 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administrador</title>
+    <title>Registro de Contactos</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #2c3e50; color: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #333; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        .header h3 { margin: 0; }
         .logout { color: #ff6b6b; text-decoration: none; font-weight: bold; }
-        .kpis { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .kpi-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1; min-width: 150px; text-align: center; border-top: 4px solid #3498db; }
-        .kpi-card.lideres { border-top-color: #9b59b6; }
-        .kpi-card.electores { border-top-color: #2ecc71; }
-        .kpi-number { font-size: 28px; font-weight: bold; color: #333; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px;}
+        button.gps { background-color: #17a2b8; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px;}
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #ecf0f1; }
-        .btn-export { background-color: #e67e22; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
-        .btn-mapa { background-color: #3498db; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 10px; margin-left: 10px;}
-        
-        .form-crear-lider { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .form-crear-lider input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; flex: 1; min-width: 150px; }
-        .form-crear-lider button { padding: 10px 20px; background-color: #d35400; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .mensaje-flash { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .gps-status { font-size: 12px; color: green; margin-top: 5px; }
+        #div-otro-tipo { display: none; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h3>Panel de Control - Administrador</h3>
+        <h3>Hola, {{ current_user.username }}</h3>
         <a href="{{ url_for('logout') }}" class="logout">Salir</a>
     </div>
 
     {% with messages = get_flashed_messages() %}
       {% if messages %}
-        <div class="mensaje-flash">{{ messages[0] }}</div>
+        <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 10px;">{{ messages[0] }}</div>
       {% endif %}
     {% endwith %}
 
-    <div class="kpis">
-        <div class="kpi-card">
-            <div class="kpi-number">{{ total }}</div>
-            <div>Total Contactos</div>
-        </div>
-        <div class="kpi-card lideres">
-            <div class="kpi-number">{{ lideres }}</div>
-            <div>Líderes Captados</div>
-        </div>
-        <div class="kpi-card electores">
-            <div class="kpi-number">{{ electores }}</div>
-            <div>Electores (Votantes)</div>
-        </div>
-    </div>
-
     <div class="card">
-        <h4>Crear nuevo usuario para Líder</h4>
-        <form class="form-crear-lider" method="POST" action="{{ url_for('crear_lider') }}">
-            <input type="text" name="nuevo_usuario" placeholder="Usuario (ej. lider_comuna1)" required>
-            <input type="text" name="nueva_clave" placeholder="Contraseña" required>
-            <button type="submit">Crear Líder</button>
+        <h4>Registrar Nuevo Contacto</h4>
+        <form method="POST" action="{{ url_for('registrar') }}">
+            
+            <input type="text" name="campana" value="Base de apoyo Campaña Ciro a la Asamblea" required>
+            <input type="text" name="nombre" placeholder="Nombre completo" required>
+            <input type="text" name="cedula" placeholder="Número de cédula" required>
+            <input type="tel" name="telefono" placeholder="Teléfono (Opcional)">
+            
+            <select name="municipio" id="municipio" required onchange="actualizarSubregion()">
+                <option value="">Seleccione un Municipio...</option>
+                <option value="Albán (San José)">Albán (San José)</option>
+                <option value="Aldana">Aldana</option>
+                <option value="Ancuyá">Ancuyá</option>
+                <option value="Arboleda">Arboleda</option>
+                <option value="Barbacoas">Barbacoas</option>
+                <option value="Belén">Belén</option>
+                <option value="Buesaco">Buesaco</option>
+                <option value="Chachagüí">Chachagüí</option>
+                <option value="Colón (Génova)">Colón (Génova)</option>
+                <option value="Consacá">Consacá</option>
+                <option value="Contadero">Contadero</option>
+                <option value="Córdoba">Córdoba</option>
+                <option value="Cuaspud">Cuaspud</option>
+                <option value="Cumbal">Cumbal</option>
+                <option value="Cumbitara">Cumbitara</option>
+                <option value="El Charco">El Charco</option>
+                <option value="El Peñol">El Peñol</option>
+                <option value="El Rosario">El Rosario</option>
+                <option value="El Tablón de Gómez">El Tablón de Gómez</option>
+                <option value="El Tambo">El Tambo</option>
+                <option value="Francisco Pizarro">Francisco Pizarro</option>
+                <option value="Funes">Funes</option>
+                <option value="Guachucal">Guachucal</option>
+                <option value="Guaitarilla">Guaitarilla</option>
+                <option value="Gualmatán">Gualmatán</option>
+                <option value="Iles">Iles</option>
+                <option value="Imués">Imués</option>
+                <option value="Ipiales">Ipiales</option>
+                <option value="La Cruz">La Cruz</option>
+                <option value="La Florida">La Florida</option>
+                <option value="La Llanada">La Llanada</option>
+                <option value="La Tola">La Tola</option>
+                <option value="La Unión">La Unión</option>
+                <option value="Leiva">Leiva</option>
+                <option value="Linares">Linares</option>
+                <option value="Los Andes (Sotomayor)">Los Andes (Sotomayor)</option>
+                <option value="Magüí Payán">Magüí Payán</option>
+                <option value="Mallama">Mallama</option>
+                <option value="Mosquera">Mosquera</option>
+                <option value="Nariño">Nariño</option>
+                <option value="Olaya Herrera">Olaya Herrera</option>
+                <option value="Ospina">Ospina</option>
+                <option value="Pasto">Pasto</option>
+                <option value="Policarpa">Policarpa</option>
+                <option value="Potosí">Potosí</option>
+                <option value="Providencia">Providencia</option>
+                <option value="Puerres">Puerres</option>
+                <option value="Pupiales">Pupiales</option>
+                <option value="Ricaurte">Ricaurte</option>
+                <option value="Roberto Payán">Roberto Payán</option>
+                <option value="Samaniego">Samaniego</option>
+                <option value="San Bernardo">San Bernardo</option>
+                <option value="San Lorenzo">San Lorenzo</option>
+                <option value="San Pablo">San Pablo</option>
+                <option value="San Pedro de Cartago">San Pedro de Cartago</option>
+                <option value="Sandoná">Sandoná</option>
+                <option value="Santa Bárbara">Santa Bárbara</option>
+                <option value="Sapuyes">Sapuyes</option>
+                <option value="Taminango">Taminango</option>
+                <option value="Tangua">Tangua</option>
+                <option value="Tumaco">Tumaco</option>
+                <option value="Túquerres">Túquerres</option>
+                <option value="Yacuanquer">Yacuanquer</option>
+            </select>
+
+            <input type="text" name="subregion" id="subregion" placeholder="Subregión (Auto)" readonly required>
+            <input type="text" name="barrio" placeholder="Barrio / Vereda / Corregimiento" required>
+            
+            <select name="tipo" id="tipo" onchange="mostrarOtro()">
+                <option value="Elector">Elector / Votante (Base)</option>
+                <option value="Lider Campaña">Líder de Campaña (Estructura)</option>
+                <option value="Lider Comunal">Líder Social / JAC / Acueducto</option>
+                <option value="Docente">Docente</option>
+                <option value="Sindicalista">Sindicalista</option>
+                <option value="Sector Salud">Sector Salud</option>
+                <option value="Juvenil">Juvenil / Universitario</option>
+                <option value="Mujer">Líder Mujer</option>
+                <option value="Indígena">Líder Indígena</option>
+                <option value="Afro">Líder Afrocolombiano</option>
+                <option value="LGBTIQ+">Comunidad LGBTIQ+</option>
+                <option value="Ambientalista">Ambientalista / Agroecologista</option>
+                <option value="Economía Informal">Economía Informal</option>
+                <option value="Deportista">Deportista</option>
+                <option value="Otro">Otro</option>
+            </select>
+
+            <div id="div-otro-tipo">
+                <input type="text" name="otro_tipo" placeholder="¿Cuál es el rol o sector? (Especifique)">
+            </div>
+
+            <select name="compromiso">
+                <option value="1">Compromiso Bajo (Simpatiza)</option>
+                <option value="2">Compromiso Medio</option>
+                <option value="3">Compromiso Alto (Trabaja con nosotros)</option>
+            </select>
+
+            <input type="hidden" name="latitud" id="latitud">
+            <input type="hidden" name="longitud" id="longitud">
+            
+            <button type="button" class="gps" onclick="obtenerUbicacion()">📍 Capturar Ubicación GPS (Opcional)</button>
+            <div id="gps-status" class="gps-status"></div>
+
+            <button type="submit">Guardar Contacto</button>
         </form>
     </div>
 
     <div class="card">
-        <h4>Rendimiento de los Líderes (Estructura 1-5-25)</h4>
-        <table>
-            <tr>
-                <th>Líder de Campaña</th>
-                <th>Contactos Registrados</th>
-            </tr>
-            {% for lider, cantidad in conteo_lideres.items() %}
-            <tr>
-                <td>{{ lider }}</td>
-                <td><strong>{{ cantidad }}</strong></td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-
-    <div class="card">
-        <h4>Base de Datos Centralizada</h4>
-        <a href="{{ url_for('exportar') }}" class="btn-export">📥 Descargar Excel</a>
-        <!-- BOTÓN DEL MAPA -->
-        <a href="{{ url_for('mapa') }}" class="btn-mapa">🗺️ Ver Mapa de Calor</a>
-        
+        <h4>Mis Contactos Registrados ({{ contactos|length }})</h4>
         <table>
             <tr>
                 <th>Nombre</th>
                 <th>Cédula</th>
                 <th>Municipio</th>
                 <th>Rol</th>
-                <th>GPS</th>
-                <th>Subido por</th>
-                <th>Acciones</th>
             </tr>
             {% for c in contactos %}
             <tr>
                 <td>{{ c.nombre }}</td>
                 <td>{{ c.cedula }}</td>
                 <td>{{ c.municipio }}</td>
-                <td>{{ c.tipo }} {% if c.otro_tipo %}({{ c.otro_tipo }}){% endif %}</td>
-                <td>{% if c.latitud %}✅ Sí{% else %}❌ No{% endif %}</td>
-                <td>{{ c.creador.username if c.creador else 'Admin' }}</td>
-                <td style="white-space: nowrap;">
-                    <a href="{{ url_for('editar_contacto', id=c.id) }}" style="background-color: #f39c12; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; font-size: 12px;">✏️ Editar</a>
-                    <a href="{{ url_for('eliminar_contacto', id=c.id) }}" onclick="return confirm('¿Estás seguro de eliminar este contacto?');" style="background-color: #e74c3c; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; font-size: 12px;">🗑️ Eliminar</a>
-                </td>
+                <td>{{ c.tipo }}</td>
             </tr>
             {% endfor %}
         </table>
     </div>
+
+    <script>
+        const subregiones = {
+            "Pasto": "Centro", "Chachagüí": "Centro", "La Florida": "Centro", "Nariño": "Centro", "Tangua": "Centro", "Yacuanquer": "Centro",
+            "Taminango": "Cordillera", "Policarpa": "Cordillera", "Cumbitara": "Cordillera", "El Rosario": "Cordillera", "Leiva": "Cordillera",
+            "Ipiales": "Exprovincia de Obando", "Aldana": "Exprovincia de Obando", "Guachucal": "Exprovincia de Obando", "Cumbal": "Exprovincia de Obando", "Cuaspud": "Exprovincia de Obando", "Pupiales": "Exprovincia de Obando", "Puerres": "Exprovincia de Obando", "Córdoba": "Exprovincia de Obando", "Potosí": "Exprovincia de Obando", "Contadero": "Exprovincia de Obando", "Iles": "Exprovincia de Obando", "Gualmatán": "Exprovincia de Obando", "Funes": "Exprovincia de Obando",
+            "El Peñol": "Guambuyaco", "El Tambo": "Guambuyaco", "La Llanada": "Guambuyaco", "Los Andes (Sotomayor)": "Guambuyaco",
+            "La Unión": "Juanambú", "San Pedro de Cartago": "Juanambú", "San Lorenzo": "Juanambú", "Arboleda": "Juanambú", "Buesaco": "Juanambú",
+            "Túquerres": "La Sabana", "Imués": "La Sabana", "Guaitarilla": "La Sabana", "Ospina": "La Sabana", "Sapuyes": "La Sabana",
+            "El Tablón de Gómez": "Norte", "Albán (San José)": "Norte", "San Bernardo": "Norte", "Belén": "Norte", "Colón (Génova)": "Norte", "La Cruz": "Norte", "San Pablo": "Norte",
+            "Sandoná": "Occidente", "Linares": "Occidente", "Consacá": "Occidente", "Ancuyá": "Occidente",
+            "Tumaco": "Pacífico Sur", "Francisco Pizarro": "Pacífico Sur",
+            "Ricaurte": "Piedemonte Costero", "Mallama": "Piedemonte Costero",
+            "El Charco": "Sanquianga", "La Tola": "Sanquianga", "Mosquera": "Sanquianga", "Olaya Herrera": "Sanquianga", "Santa Bárbara": "Sanquianga",
+            "Barbacoas": "Telembí", "Magüí Payán": "Telembí", "Roberto Payán": "Telembí"
+        };
+
+        function actualizarSubregion() {
+            const municipio = document.getElementById('municipio').value;
+            const campoSubregion = document.getElementById('subregion');
+            if (municipio && subregiones[municipio]) { campoSubregion.value = subregiones[municipio]; } 
+            else { campoSubregion.value = ""; }
+        }
+
+        function mostrarOtro() {
+            const tipo = document.getElementById('tipo').value;
+            const divOtro = document.getElementById('div-otro-tipo');
+            if (tipo === 'Otro') { divOtro.style.display = 'block'; } 
+            else { divOtro.style.display = 'none'; divOtro.querySelector('input').value = ''; }
+        }
+
+        function obtenerUbicacion() {
+            const status = document.getElementById('gps-status');
+            if (navigator.geolocation) {
+                status.innerText = "Obteniendo coordenadas...";
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('latitud').value = position.coords.latitude;
+                        document.getElementById('longitud').value = position.coords.longitude;
+                        status.innerText = "✅ Coordenadas capturadas correctamente.";
+                    },
+                    (error) => { status.innerText = "❌ Error al capturar GPS."; }
+                );
+            } else { status.innerText = "❌ Tu navegador no soporta GPS."; }
+        }
+    </script>
 </body>
 </html>
