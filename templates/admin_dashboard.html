@@ -19,9 +19,10 @@
         th { background-color: #ecf0f1; }
         .btn-export { background-color: #e67e22; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
         .btn-mapa { background-color: #3498db; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 10px; margin-left: 10px;}
+        .btn-lideres { background-color: #27ae60; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 10px; margin-left: 10px;}
         
         .form-crear-lider { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .form-crear-lider input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; flex: 1; min-width: 150px; }
+        .form-crear-lider input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; flex: 1; min-width: 120px; }
         .form-crear-lider button { padding: 10px 20px; background-color: #d35400; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .mensaje-flash { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
     </style>
@@ -56,32 +57,19 @@
     <div class="card">
         <h4>Crear nuevo usuario para Líder</h4>
         <form class="form-crear-lider" method="POST" action="{{ url_for('crear_lider') }}">
-            <input type="text" name="nuevo_usuario" placeholder="Usuario (ej. lider_comuna1)" required>
+            <input type="text" name="nombre_completo" placeholder="Nombre Real" required>
+            <input type="text" name="cedula" placeholder="Cédula" required>
+            <input type="text" name="nuevo_usuario" placeholder="Usuario (sin espacios)" required>
             <input type="text" name="nueva_clave" placeholder="Contraseña" required>
             <button type="submit">Crear Líder</button>
         </form>
     </div>
 
     <div class="card">
-        <h4>Rendimiento de los Líderes (Estructura 1-5-25)</h4>
-        <table>
-            <tr>
-                <th>Líder de Campaña</th>
-                <th>Contactos Registrados</th>
-            </tr>
-            {% for lider, cantidad in conteo_lideres.items() %}
-            <tr>
-                <td>{{ lider }}</td>
-                <td><strong>{{ cantidad }}</strong></td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-
-    <div class="card">
         <h4>Base de Datos Centralizada</h4>
         <a href="{{ url_for('exportar') }}" class="btn-export">📥 Descargar Excel</a>
         <a href="{{ url_for('mapa') }}" class="btn-mapa">🗺️ Ver Mapa de Calor</a>
+        <a href="{{ url_for('gestion_lideres') }}" class="btn-lideres">👥 Gestionar Líderes</a>
         
         <table>
             <tr>
@@ -98,12 +86,12 @@
                 <td>{{ c.nombre }}</td>
                 <td>{{ c.cedula }}</td>
                 <td>{{ c.municipio }}</td>
-                <td>{{ c.tipo }} {% if c.otro_tipo %}({{ c.otro_tipo }}){% endif %}</td>
+                <td>{{ c.tipo }}</td>
                 <td>{% if c.latitud %}✅ Sí{% else %}❌ No{% endif %}</td>
                 <td>{{ c.creador.username if c.creador else 'Admin' }}</td>
                 <td style="white-space: nowrap;">
                     <a href="{{ url_for('editar_contacto', id=c.id) }}" style="background-color: #f39c12; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; font-size: 12px;">✏️ Editar</a>
-                    <a href="{{ url_for('eliminar_contacto', id=c.id) }}" onclick="return confirm('¿Estás seguro de eliminar este contacto?');" style="background-color: #e74c3c; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; font-size: 12px;">🗑️ Eliminar</a>
+                    <a href="{{ url_for('eliminar_contacto', id=c.id) }}" onclick="return confirm('¿Estás seguro?');" style="background-color: #e74c3c; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; font-size: 12px;">🗑️ Eliminar</a>
                 </td>
             </tr>
             {% endfor %}
