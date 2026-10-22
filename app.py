@@ -5,12 +5,30 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import csv
 import io
+import requests
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'clave_secreta_campana_narino'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///campana_central.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
+
+# ============================================================================
+# CONFIGURACIÓN DE TELEGRAM
+# ============================================================================
+TELEGRAM_TOKEN = "8880446287:AAHcsuATLoNos3VMSXnRVL4BVOOQSefpI6U"
+TELEGRAM_CHAT_ID = "132397151"
+
+def enviar_alerta_telegram(nombre_votante, municipio, lider):
+    try:
+        mensaje = f"🚨 ¡NUEVO VOTANTE REGISTRADO!\n\n👤 Nombre: {nombre_votante}\n📍 Municipio: {municipio}\n🤝 Registrado por: {lider}"
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": mensaje}
+        requests.post(url, json=payload, timeout=5)
+    except Exception as e:
+        print(f"Error enviando notificación: {e}")
+
+# ============================================================================
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -209,6 +227,10 @@ def registrar():
         )
         db.session.add(nuevo_contacto)
         db.session.commit()
+        
+        # Enviar notificación a Telegram
+        enviar_alerta_telegram(nuevo_contacto.nombre, nuevo_contacto.municipio, current_user.username)
+        
         flash('Contacto registrado exitosamente')
     except Exception as e:
         db.session.rollback()
