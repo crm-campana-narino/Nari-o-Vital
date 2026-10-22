@@ -34,7 +34,8 @@
 
     <div class="card">
         <h4>Registrar Nuevo Contacto</h4>
-        <form method="POST" action="{{ url_for('registrar') }}">
+        <!-- onsubmit llama a la función que inyecta el GPS si falló -->
+        <form method="POST" action="{{ url_for('registrar') }}" onsubmit="inyectarCoordenadas()">
             
             <input type="text" name="campana" value="Base de apoyo Campaña Ciro a la Asamblea" required>
             <input type="text" name="nombre" placeholder="Nombre completo" required>
@@ -139,8 +140,10 @@
                 <option value="3">Compromiso Alto (Trabaja con nosotros)</option>
             </select>
 
+            <!-- Campos ocultos para GPS -->
             <input type="hidden" name="latitud" id="latitud">
             <input type="hidden" name="longitud" id="longitud">
+            <input type="hidden" name="gps_automatico" id="gps_automatico" value="false">
             
             <button type="button" class="gps" onclick="obtenerUbicacion()">📍 Capturar Ubicación GPS (Opcional)</button>
             <div id="gps-status" class="gps-status"></div>
@@ -170,6 +173,14 @@
     </div>
 
     <script>
+        // Coordenadas de los parques principales de los municipios
+        const coordsCabeceras = {
+            "Pasto": [1.2136, -77.2811], "Tumaco": [1.7986, -78.7644], "Ipiales": [0.8255, -77.6397],
+            "Consacá": [1.2083, -77.4667], "Túquerres": [1.0858, -77.6172], "La Unión": [1.6047, -77.1305],
+            "Samaniego": [1.3361, -77.5953], "Cumbal": [0.9089, -77.7914], "Chachagüí": [1.3603, -77.2847],
+            "Sandoná": [1.2847, -77.4714], "Ancuyá": [1.2536, -77.5328], "Linares": [1.3583, -77.5258]
+        };
+
         const subregiones = {
             "Pasto": "Centro", "Chachagüí": "Centro", "La Florida": "Centro", "Nariño": "Centro", "Tangua": "Centro", "Yacuanquer": "Centro",
             "Taminango": "Cordillera", "Policarpa": "Cordillera", "Cumbitara": "Cordillera", "El Rosario": "Cordillera", "Leiva": "Cordillera",
@@ -207,11 +218,32 @@
                     (position) => {
                         document.getElementById('latitud').value = position.coords.latitude;
                         document.getElementById('longitud').value = position.coords.longitude;
-                        status.innerText = "✅ Coordenadas capturadas correctamente.";
+                        document.getElementById('gps_automatico').value = 'false';
+                        status.innerText = "✅ Coordenadas reales capturadas.";
                     },
-                    (error) => { status.innerText = "❌ Error al capturar GPS."; }
+                    (error) => { status.innerText = "❌ Error al capturar GPS. Se usará la cabecera municipal."; }
                 );
             } else { status.innerText = "❌ Tu navegador no soporta GPS."; }
+        }
+
+        // Lógica de respaldo: Si no hay GPS real, toma las coordenadas del municipio
+        function inyectarCoordenadas() {
+            const lat = document.getElementById('latitud').value;
+            const municipio = document.getElementById('municipio').value;
+
+            if (!lat && municipio) {
+                const coords = coordsCabeceras[municipio];
+                if (coords) {
+                    document.getElementById('latitud').value = coords[0];
+                    document.getElementById('longitud').value = coords[1];
+                    document.getElementById('gps_automatico').value = 'true';
+                } else {
+                    // Si el municipio no está en el diccionario, usa Pasto por defecto
+                    document.getElementById('latitud').value = 1.2136;
+                    document.getElementById('longitud').value = -77.2811;
+                    document.getElementById('gps_automatico').value = 'true';
+                }
+            }
         }
     </script>
 </body>
