@@ -27,6 +27,9 @@ class Usuario(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    password_visible = db.Column(db.String(50))
+    nombre_completo = db.Column(db.String(100))
+    cedula = db.Column(db.String(20))
     es_admin = db.Column(db.Boolean, default=False)
 
 class Contacto(db.Model):
@@ -44,7 +47,7 @@ class Contacto(db.Model):
     tipo = db.Column(db.String(50)) 
     otro_tipo = db.Column(db.String(100))
     compromiso = db.Column(db.Integer, default=1)
-    creador_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))
+    creador_id = db.Column(db.Integer, db.ForeignKey('usuario.id', ondelete='SET NULL'), nullable=True)
     creador = db.relationship('Usuario', backref='contactos')
 
 @login_manager.user_loader
@@ -80,7 +83,7 @@ def dashboard():
             
             conteo_lideres = {}
             for c in todos_contactos:
-                nombre_lider = c.creador.username if c.creador else "Desconocido"
+                nombre_lider = c.creador.username if c.creador else "Admin"
                 conteo_lideres[nombre_lider] = conteo_lideres.get(nombre_lider, 0) + 1
                 
             return render_template('admin_dashboard.html', contactos=todos_contactos, total=total_contactos, lideres=total_lideres, electores=total_electores, conteo_lideres=conteo_lideres)
@@ -93,6 +96,60 @@ def dashboard():
         except Exception as e:
             return f"Error en el Panel del Líder: {str(e)}", 500
 
+@app.route('/gestion_lideres')
+@login_required
+def gestion_lideres():
+    if not current_user.es_admin: return "Acceso denegado", 403
+    try:
+        usuarios = Usuario.query.filter_by(es_admin=False).all()
+        return render_template('gestion_lideres.html', usuarios=usuarios)
+    except Exception as e:
+        return f"Error al cargar gestión de líderes: {str(e)}", 500
+
+@app.route('/crear_lider', methods=['POST'])
+@login_required
+def crear_lider():
+    if not current_user.es_admin: return "Acceso denegado", 403
+    
+    nuevo_usuario = request.form.get('nuevo_usuario').strip()
+    nueva_clave = request.form.get('nueva_clave').strip()
+    nombre_completo = request.form.get('nombre_completo').strip() if request.form.get('nombre_completo') else "Sin nombre"
+    cedula = request.form.get('cedula').strip() if request.form.get('cedula') else "Sin cédula"
+    
+    if Usuario.query.filter_by(username=nuevo_usuario).first():
+        flash(f'El usuario {nuevo_usuario} ya existe.')
+    else:
+        try:
+            user = Usuario(
+                username=nuevo_usuario, 
+                password_hash=generate_password_hash(nueva_clave), 
+                password_visible=nueva_clave,
+                nombre_completo=nombre_completo,
+                cedula=cedula,
+                es_admin=False
+            )
+            db.session.add(user)
+            db.session.commit()
+            flash(f'Líder {nombre_completo} creado exitosamente.')
+        except Exception as e:
+            db.session.rollback()
+            return f"Error al crear líder: {str(e)}", 500
+    return redirect(url_for('dashboard'))
+
+@app.route('/eliminar_lider/<int:id>')
+@login_required
+def eliminar_lider(id):
+    if not current_user.es_admin: return "Acceso denegado", 403
+    try:
+        user = Usuario.query.get_or_404(id)
+        db.session.delete(user)
+        db.session.commit()
+        flash('Líder eliminado del sistema. Sus contactos se mantienen asignados al Admin.')
+    except Exception as e:
+        db.session.rollback()
+        return f"Error al eliminar líder: {str(e)}", 500
+    return redirect(url_for('gestion_lideres'))
+
 @app.route('/mapa')
 @login_required
 def mapa():
@@ -103,31 +160,12 @@ def mapa():
 @login_required
 def datos_mapa():
     if not current_user.es_admin: return jsonify([])
-    contactos = Contacto.query.filter(Contacto.latitud.isnot(None)).all()
-    datos = [{"nombre": c.nombre, "lat": c.latitud, "lon": c.longitud, "tipo": c.tipo} for c in contactos]
-    return jsonify(datos)
-
-@app.route('/crear_lider', methods=['POST'])
-@login_required
-def crear_lider():
-    if not current_user.es_admin: return "Acceso denegado", 403
-    
-    nuevo_usuario = request.form.get('nuevo_usuario').strip()
-    nueva_clave = request.form.get('nueva_clave').strip()
-    
-    if Usuario.query.filter_by(username=nuevo_usuario).first():
-        flash(f'El usuario {nuevo_usuario} ya existe.')
-    else:
-        try:
-            user = Usuario(username=nuevo_usuario, password_hash=generate_password_hash(nueva_clave), es_admin=False)
-            db.session.add(user)
-            db.session.commit()
-            flash(f'Líder {nuevo_usuario} creado exitosamente.')
-        except Exception as e:
-            db.session.rollback()
-            # Si hay un error, lo mostramos en pantalla en lugar de romper la App
-            return f"Error al crear líder (Revisa si usaste espacios): {str(e)}", 500
-    return redirect(url_for('dashboard'))
+    try:
+        contactos = Contacto.query.filter(Contacto.latitud.isnot(None)).all()
+        datos = [{"nombre": c.nombre, "lat": c.latitud, "lon": c.longitud, "tipo": c.tipo} for c in contactos]
+        return jsonify(datos)
+    except Exception:
+        return jsonify([])
 
 @app.route('/eliminar_contacto/<int:id>')
 @login_required
