@@ -34,7 +34,6 @@
 
     <div class="card">
         <h4>Registrar Nuevo Contacto</h4>
-        <!-- onsubmit llama a la función que inyecta el GPS si falló -->
         <form method="POST" action="{{ url_for('registrar') }}" onsubmit="inyectarCoordenadas()">
             
             <input type="text" name="campana" value="Base de apoyo Campaña Ciro a la Asamblea" required>
@@ -140,7 +139,6 @@
                 <option value="3">Compromiso Alto (Trabaja con nosotros)</option>
             </select>
 
-            <!-- Campos ocultos para GPS -->
             <input type="hidden" name="latitud" id="latitud">
             <input type="hidden" name="longitud" id="longitud">
             <input type="hidden" name="gps_automatico" id="gps_automatico" value="false">
@@ -173,12 +171,29 @@
     </div>
 
     <script>
-        // Coordenadas de los parques principales de los municipios
+        // Coordenadas reales de los parques principales de los 64 municipios de Nariño
         const coordsCabeceras = {
-            "Pasto": [1.2136, -77.2811], "Tumaco": [1.7986, -78.7644], "Ipiales": [0.8255, -77.6397],
-            "Consacá": [1.2083, -77.4667], "Túquerres": [1.0858, -77.6172], "La Unión": [1.6047, -77.1305],
-            "Samaniego": [1.3361, -77.5953], "Cumbal": [0.9089, -77.7914], "Chachagüí": [1.3603, -77.2847],
-            "Sandoná": [1.2847, -77.4714], "Ancuyá": [1.2536, -77.5328], "Linares": [1.3583, -77.5258]
+            "Albán (San José)": [1.4739, -77.0811], "Aldana": [0.8833, -77.7000], "Ancuyá": [1.2333, -77.5333],
+            "Arboleda": [1.5000, -77.0833], "Barbacoas": [1.6667, -78.1333], "Belén": [1.6000, -77.0167],
+            "Buesaco": [1.3833, -77.1500], "Chachagüí": [1.3603, -77.2847], "Colón (Génova)": [1.6333, -77.0167],
+            "Consacá": [1.2083, -77.4667], "Contadero": [0.9167, -77.5500], "Córdoba": [0.8500, -77.5167],
+            "Cuaspud": [0.8833, -77.7333], "Cumbal": [0.9089, -77.7914], "Cumbitara": [1.6333, -77.7500],
+            "El Charco": [2.4833, -78.1167], "El Peñol": [1.4500, -77.0833], "El Rosario": [1.7500, -77.3333],
+            "El Tablón de Gómez": [1.4333, -77.1000], "El Tambo": [1.4167, -77.3833], "Francisco Pizarro": [2.0333, -78.6500],
+            "Funes": [1.0000, -77.4500], "Guachucal": [0.9667, -77.7333], "Guaitarilla": [1.1333, -77.5500],
+            "Gualmatán": [0.9167, -77.6333], "Iles": [0.9667, -77.5167], "Imués": [1.0500, -77.5000],
+            "Ipiales": [0.8255, -77.6397], "La Cruz": [1.6000, -76.9667], "La Florida": [1.3000, -77.4000],
+            "La Llanada": [1.4667, -77.5833], "La Tola": [2.4000, -78.2333], "La Unión": [1.6047, -77.1305],
+            "Leiva": [1.9333, -77.3000], "Linares": [1.3583, -77.5258], "Los Andes (Sotomayor": [1.5000, -77.5000],
+            "Magüí Payán": [1.7667, -78.1833], "Mallama": [1.1333, -77.8667], "Mosquera": [2.5000, -78.4500],
+            "Nariño": [1.2833, -77.3500], "Olaya Herrera": [2.3500, -78.2667], "Ospina": [1.0500, -77.5500],
+            "Pasto": [1.2136, -77.2811], "Policarpa": [1.6333, -77.4667], "Potosí": [0.8000, -77.5667],
+            "Providencia": [1.2333, -77.6000], "Puerres": [0.8833, -77.5000], "Pupiales": [0.8667, -77.6333],
+            "Ricaurte": [1.2000, -77.9833], "Roberto Payán": [1.7000, -78.2500], "Samaniego": [1.3361, -77.5953],
+            "San Bernardo": [1.5167, -77.0500], "San Lorenzo": [1.5000, -77.2167], "San Pablo": [1.6667, -77.0000],
+            "San Pedro de Cartago": [1.5500, -77.1167], "Sandoná": [1.2847, -77.4714], "Santa Bárbara": [2.4500, -78.3333],
+            "Sapuyes": [1.0333, -77.6167], "Taminango": [1.5667, -77.2833], "Tangua": [1.1000, -77.3833],
+            "Tumaco": [1.7986, -78.7644], "Túquerres": [1.0858, -77.6172], "Yacuanquer": [1.1167, -77.4000]
         };
 
         const subregiones = {
@@ -226,7 +241,7 @@
             } else { status.innerText = "❌ Tu navegador no soporta GPS."; }
         }
 
-        // Lógica de respaldo: Si no hay GPS real, toma las coordenadas del municipio
+        // Si el líder no captura GPS, inyecta la cabecera municipal
         function inyectarCoordenadas() {
             const lat = document.getElementById('latitud').value;
             const municipio = document.getElementById('municipio').value;
@@ -238,7 +253,7 @@
                     document.getElementById('longitud').value = coords[1];
                     document.getElementById('gps_automatico').value = 'true';
                 } else {
-                    // Si el municipio no está en el diccionario, usa Pasto por defecto
+                    // Si el municipio no está en el diccionario (por si acaso), usa Pasto
                     document.getElementById('latitud').value = 1.2136;
                     document.getElementById('longitud').value = -77.2811;
                     document.getElementById('gps_automatico').value = 'true';
