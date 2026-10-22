@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Líderes</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #2c3e50; color: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .btn-back { color: white; text-decoration: none; background: #3498db; padding: 8px 15px; border-radius: 5px; font-weight: bold; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px;}
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #ecf0f1; }
+        .btn-delete { background-color: #e74c3c; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; font-size: 12px; }
+        .mensaje-flash { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h3>Directorio de Líderes de Campaña</h3>
+        <a href="{{ url_for('dashboard') }}" class="btn-back">Volver al Panel</a>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="mensaje-flash">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="card">
+        <h4>Lista de Líderes Registrados</h4>
+        <table>
+            <tr>
+                <th>Nombre Completo</th>
+                <th>Cédula</th>
+                <th>Usuario</th>
+                <th>Contraseña</th>
+                <th>Acciones</th>
+            </tr>
+            {% for u in usuarios %}
+            <tr>
+                <td>{{ u.nombre_completo or 'No registrado' }}</td>
+                <td>{{ u.cedula or 'No registrada' }}</td>
+                <td><strong>{{ u.username }}</strong></td>
+                <td>{{ u.password_visible or 'Oculta' }}</td>
+                <td>
+                    <a href="{{ url_for('eliminar_lider', id=u.id) }}" onclick="return confirm('¿Estás seguro de eliminar a este líder? Sus contactos quedarán en el sistema.');" class="btn-delete">🗑️ Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</body>
+</html>
