@@ -44,6 +44,7 @@ class Contacto(db.Model):
     barrio_vereda = db.Column(db.String(100))
     latitud = db.Column(db.Float, nullable=True)
     longitud = db.Column(db.Float, nullable=True)
+    gps_automatico = db.Column(db.Boolean, default=False)
     tipo = db.Column(db.String(50)) 
     otro_tipo = db.Column(db.String(100))
     compromiso = db.Column(db.Integer, default=1)
@@ -110,7 +111,6 @@ def gestion_lideres():
 @login_required
 def crear_lider():
     if not current_user.es_admin: return "Acceso denegado", 403
-    
     nuevo_usuario = request.form.get('nuevo_usuario').strip()
     nueva_clave = request.form.get('nueva_clave').strip()
     nombre_completo = request.form.get('nombre_completo').strip() if request.form.get('nombre_completo') else "Sin nombre"
@@ -120,14 +120,7 @@ def crear_lider():
         flash(f'El usuario {nuevo_usuario} ya existe.')
     else:
         try:
-            user = Usuario(
-                username=nuevo_usuario, 
-                password_hash=generate_password_hash(nueva_clave), 
-                password_visible=nueva_clave,
-                nombre_completo=nombre_completo,
-                cedula=cedula,
-                es_admin=False
-            )
+            user = Usuario(username=nuevo_usuario, password_hash=generate_password_hash(nueva_clave), password_visible=nueva_clave, nombre_completo=nombre_completo, cedula=cedula, es_admin=False)
             db.session.add(user)
             db.session.commit()
             flash(f'Líder {nombre_completo} creado exitosamente.')
@@ -205,13 +198,14 @@ def editar_contacto(id):
 @login_required
 def registrar():
     try:
+        gps_auto = request.form.get('gps_automatico') == 'true'
         nuevo_contacto = Contacto(
             campana=request.form.get('campana'), cedula=request.form.get('cedula'), nombre=request.form.get('nombre'),
             telefono=request.form.get('telefono'), municipio=request.form.get('municipio'), subregion=request.form.get('subregion'),
             barrio_vereda=request.form.get('barrio'), tipo=request.form.get('tipo'),
             otro_tipo=request.form.get('otro_tipo') if request.form.get('tipo') == 'Otro' else None,
             compromiso=int(request.form.get('compromiso')), latitud=limpiar_coordenada(request.form.get('latitud')), 
-            longitud=limpiar_coordenada(request.form.get('longitud')), creador_id=current_user.id
+            longitud=limpiar_coordenada(request.form.get('longitud')), gps_automatico=gps_auto, creador_id=current_user.id
         )
         db.session.add(nuevo_contacto)
         db.session.commit()
@@ -228,9 +222,9 @@ def exportar():
     contactos = Contacto.query.all()
     output = io.StringIO()
     writer = csv.writer(output, delimiter=';')
-    writer.writerow(['Campaña', 'Cédula', 'Nombre', 'Teléfono', 'Municipio', 'Subregión', 'Barrio', 'Tipo', 'Otro Tipo', 'Compromiso', 'Latitud', 'Longitud', 'Registrado por'])
+    writer.writerow(['Campaña', 'Cédula', 'Nombre', 'Teléfono', 'Municipio', 'Subregión', 'Barrio', 'Tipo', 'Otro Tipo', 'Compromiso', 'Latitud', 'Longitud', 'GPS Auto', 'Registrado por'])
     for c in contactos:
-        writer.writerow([c.campana, c.cedula, c.nombre, c.telefono, c.municipio, c.subregion, c.barrio_vereda, c.tipo, c.otro_tipo, c.compromiso, c.latitud, c.longitud, c.creador.username if c.creador else "Admin"])
+        writer.writerow([c.campana, c.cedula, c.nombre, c.telefono, c.municipio, c.subregion, c.barrio_vereda, c.tipo, c.otro_tipo, c.compromiso, c.latitud, c.longitud, c.gps_automatico, c.creador.username if c.creador else "Admin"])
     response = Response(output.getvalue(), mimetype='text/csv')
     response.headers["Content-Disposition"] = "attachment; filename=Base_Datos_Campana.csv"
     return response
