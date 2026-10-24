@@ -1,265 +1,66 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Contactos</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #333; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
-        .header h3 { margin: 0; }
-        .logout { color: #ff6b6b; text-decoration: none; font-weight: bold; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px;}
-        button.gps { background-color: #17a2b8; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px;}
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .gps-status { font-size: 12px; color: green; margin-top: 5px; }
-        #div-otro-tipo { display: none; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h3>Hola, {{ current_user.username }}</h3>
-        <a href="{{ url_for('logout') }}" class="logout">Salir</a>
-    </div>
-
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 10px;">{{ messages[0] }}</div>
-      {% endif %}
-    {% endwith %}
-
-    <div class="card">
-        <h4>Registrar Nuevo Contacto</h4>
-        <form method="POST" action="{{ url_for('registrar') }}" onsubmit="inyectarCoordenadas()">
-            
-            <input type="text" name="campana" value="Base de apoyo Campaña Ciro a la Asamblea" required>
-            <input type="text" name="nombre" placeholder="Nombre completo" required>
-            <input type="text" name="cedula" placeholder="Número de cédula" required>
-            <input type="tel" name="telefono" placeholder="Teléfono (Opcional)">
-            
-            <select name="municipio" id="municipio" required onchange="actualizarSubregion()">
-                <option value="">Seleccione un Municipio...</option>
-                <option value="Albán (San José)">Albán (San José)</option>
-                <option value="Aldana">Aldana</option>
-                <option value="Ancuyá">Ancuyá</option>
-                <option value="Arboleda">Arboleda</option>
-                <option value="Barbacoas">Barbacoas</option>
-                <option value="Belén">Belén</option>
-                <option value="Buesaco">Buesaco</option>
-                <option value="Chachagüí">Chachagüí</option>
-                <option value="Colón (Génova)">Colón (Génova)</option>
-                <option value="Consacá">Consacá</option>
-                <option value="Contadero">Contadero</option>
-                <option value="Córdoba">Córdoba</option>
-                <option value="Cuaspud">Cuaspud</option>
-                <option value="Cumbal">Cumbal</option>
-                <option value="Cumbitara">Cumbitara</option>
-                <option value="El Charco">El Charco</option>
-                <option value="El Peñol">El Peñol</option>
-                <option value="El Rosario">El Rosario</option>
-                <option value="El Tablón de Gómez">El Tablón de Gómez</option>
-                <option value="El Tambo">El Tambo</option>
-                <option value="Francisco Pizarro">Francisco Pizarro</option>
-                <option value="Funes">Funes</option>
-                <option value="Guachucal">Guachucal</option>
-                <option value="Guaitarilla">Guaitarilla</option>
-                <option value="Gualmatán">Gualmatán</option>
-                <option value="Iles">Iles</option>
-                <option value="Imués">Imués</option>
-                <option value="Ipiales">Ipiales</option>
-                <option value="La Cruz">La Cruz</option>
-                <option value="La Florida">La Florida</option>
-                <option value="La Llanada">La Llanada</option>
-                <option value="La Tola">La Tola</option>
-                <option value="La Unión">La Unión</option>
-                <option value="Leiva">Leiva</option>
-                <option value="Linares">Linares</option>
-                <option value="Los Andes (Sotomayor)">Los Andes (Sotomayor)</option>
-                <option value="Magüí Payán">Magüí Payán</option>
-                <option value="Mallama">Mallama</option>
-                <option value="Mosquera">Mosquera</option>
-                <option value="Nariño">Nariño</option>
-                <option value="Olaya Herrera">Olaya Herrera</option>
-                <option value="Ospina">Ospina</option>
-                <option value="Pasto">Pasto</option>
-                <option value="Policarpa">Policarpa</option>
-                <option value="Potosí">Potosí</option>
-                <option value="Providencia">Providencia</option>
-                <option value="Puerres">Puerres</option>
-                <option value="Pupiales">Pupiales</option>
-                <option value="Ricaurte">Ricaurte</option>
-                <option value="Roberto Payán">Roberto Payán</option>
-                <option value="Samaniego">Samaniego</option>
-                <option value="San Bernardo">San Bernardo</option>
-                <option value="San Lorenzo">San Lorenzo</option>
-                <option value="San Pablo">San Pablo</option>
-                <option value="San Pedro de Cartago">San Pedro de Cartago</option>
-                <option value="Sandoná">Sandoná</option>
-                <option value="Santa Bárbara">Santa Bárbara</option>
-                <option value="Sapuyes">Sapuyes</option>
-                <option value="Taminango">Taminango</option>
-                <option value="Tangua">Tangua</option>
-                <option value="Tumaco">Tumaco</option>
-                <option value="Túquerres">Túquerres</option>
-                <option value="Yacuanquer">Yacuanquer</option>
-            </select>
-
-            <input type="text" name="subregion" id="subregion" placeholder="Subregión (Auto)" readonly required>
-            <input type="text" name="barrio" placeholder="Barrio / Vereda / Corregimiento" required>
-            
-            <select name="tipo" id="tipo" onchange="mostrarOtro()">
-                <option value="Elector">Elector / Votante (Base)</option>
-                <option value="Lider Campaña">Líder de Campaña (Estructura)</option>
-                <option value="Lider Comunal">Líder Social / JAC / Acueducto</option>
-                <option value="Docente">Docente</option>
-                <option value="Sindicalista">Sindicalista</option>
-                <option value="Sector Salud">Sector Salud</option>
-                <option value="Juvenil">Juvenil / Universitario</option>
-                <option value="Mujer">Líder Mujer</option>
-                <option value="Indígena">Líder Indígena</option>
-                <option value="Afro">Líder Afrocolombiano</option>
-                <option value="LGBTIQ+">Comunidad LGBTIQ+</option>
-                <option value="Ambientalista">Ambientalista / Agroecologista</option>
-                <option value="Economía Informal">Economía Informal</option>
-                <option value="Deportista">Deportista</option>
-                <option value="Otro">Otro</option>
-            </select>
-
-            <div id="div-otro-tipo">
-                <input type="text" name="otro_tipo" placeholder="¿Cuál es el rol o sector? (Especifique)">
-            </div>
-
-            <select name="compromiso">
-                <option value="1">Compromiso Bajo (Simpatiza)</option>
-                <option value="2">Compromiso Medio</option>
-                <option value="3">Compromiso Alto (Trabaja con nosotros)</option>
-            </select>
-
-            <input type="hidden" name="latitud" id="latitud">
-            <input type="hidden" name="longitud" id="longitud">
-            <input type="hidden" name="gps_automatico" id="gps_automatico" value="false">
-            
-            <button type="button" class="gps" onclick="obtenerUbicacion()">📍 Capturar Ubicación GPS (Opcional)</button>
-            <div id="gps-status" class="gps-status"></div>
-
-            <button type="submit">Guardar Contacto</button>
-        </form>
-    </div>
-
-    <div class="card">
-        <h4>Mis Contactos Registrados ({{ contactos|length }})</h4>
-        <table>
-            <tr>
-                <th>Nombre</th>
-                <th>Cédula</th>
-                <th>Municipio</th>
-                <th>Rol</th>
-            </tr>
-            {% for c in contactos %}
-            <tr>
-                <td>{{ c.nombre }}</td>
-                <td>{{ c.cedula }}</td>
-                <td>{{ c.municipio }}</td>
-                <td>{{ c.tipo }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-
-    <script>
-        // Coordenadas reales de los parques principales de los 64 municipios de Nariño
-        const coordsCabeceras = {
-            "Albán (San José)": [1.4739, -77.0811], "Aldana": [0.8833, -77.7000], "Ancuyá": [1.2333, -77.5333],
-            "Arboleda": [1.5000, -77.0833], "Barbacoas": [1.6667, -78.1333], "Belén": [1.6000, -77.0167],
-            "Buesaco": [1.3833, -77.1500], "Chachagüí": [1.3603, -77.2847], "Colón (Génova)": [1.6333, -77.0167],
-            "Consacá": [1.2083, -77.4667], "Contadero": [0.9167, -77.5500], "Córdoba": [0.8500, -77.5167],
-            "Cuaspud": [0.8833, -77.7333], "Cumbal": [0.9089, -77.7914], "Cumbitara": [1.6333, -77.7500],
-            "El Charco": [2.4833, -78.1167], "El Peñol": [1.4500, -77.0833], "El Rosario": [1.7500, -77.3333],
-            "El Tablón de Gómez": [1.4333, -77.1000], "El Tambo": [1.4167, -77.3833], "Francisco Pizarro": [2.0333, -78.6500],
-            "Funes": [1.0000, -77.4500], "Guachucal": [0.9667, -77.7333], "Guaitarilla": [1.1333, -77.5500],
-            "Gualmatán": [0.9167, -77.6333], "Iles": [0.9667, -77.5167], "Imués": [1.0500, -77.5000],
-            "Ipiales": [0.8255, -77.6397], "La Cruz": [1.6000, -76.9667], "La Florida": [1.3000, -77.4000],
-            "La Llanada": [1.4667, -77.5833], "La Tola": [2.4000, -78.2333], "La Unión": [1.6047, -77.1305],
-            "Leiva": [1.9333, -77.3000], "Linares": [1.3583, -77.5258], "Los Andes (Sotomayor": [1.5000, -77.5000],
-            "Magüí Payán": [1.7667, -78.1833], "Mallama": [1.1333, -77.8667], "Mosquera": [2.5000, -78.4500],
-            "Nariño": [1.2833, -77.3500], "Olaya Herrera": [2.3500, -78.2667], "Ospina": [1.0500, -77.5500],
-            "Pasto": [1.2136, -77.2811], "Policarpa": [1.6333, -77.4667], "Potosí": [0.8000, -77.5667],
-            "Providencia": [1.2333, -77.6000], "Puerres": [0.8833, -77.5000], "Pupiales": [0.8667, -77.6333],
-            "Ricaurte": [1.2000, -77.9833], "Roberto Payán": [1.7000, -78.2500], "Samaniego": [1.3361, -77.5953],
-            "San Bernardo": [1.5167, -77.0500], "San Lorenzo": [1.5000, -77.2167], "San Pablo": [1.6667, -77.0000],
-            "San Pedro de Cartago": [1.5500, -77.1167], "Sandoná": [1.2847, -77.4714], "Santa Bárbara": [2.4500, -78.3333],
-            "Sapuyes": [1.0333, -77.6167], "Taminango": [1.5667, -77.2833], "Tangua": [1.1000, -77.3833],
-            "Tumaco": [1.7986, -78.7644], "Túquerres": [1.0858, -77.6172], "Yacuanquer": [1.1167, -77.4000]
-        };
-
-        const subregiones = {
-            "Pasto": "Centro", "Chachagüí": "Centro", "La Florida": "Centro", "Nariño": "Centro", "Tangua": "Centro", "Yacuanquer": "Centro",
-            "Taminango": "Cordillera", "Policarpa": "Cordillera", "Cumbitara": "Cordillera", "El Rosario": "Cordillera", "Leiva": "Cordillera",
-            "Ipiales": "Exprovincia de Obando", "Aldana": "Exprovincia de Obando", "Guachucal": "Exprovincia de Obando", "Cumbal": "Exprovincia de Obando", "Cuaspud": "Exprovincia de Obando", "Pupiales": "Exprovincia de Obando", "Puerres": "Exprovincia de Obando", "Córdoba": "Exprovincia de Obando", "Potosí": "Exprovincia de Obando", "Contadero": "Exprovincia de Obando", "Iles": "Exprovincia de Obando", "Gualmatán": "Exprovincia de Obando", "Funes": "Exprovincia de Obando",
-            "El Peñol": "Guambuyaco", "El Tambo": "Guambuyaco", "La Llanada": "Guambuyaco", "Los Andes (Sotomayor)": "Guambuyaco",
-            "La Unión": "Juanambú", "San Pedro de Cartago": "Juanambú", "San Lorenzo": "Juanambú", "Arboleda": "Juanambú", "Buesaco": "Juanambú",
-            "Túquerres": "La Sabana", "Imués": "La Sabana", "Guaitarilla": "La Sabana", "Ospina": "La Sabana", "Sapuyes": "La Sabana",
-            "El Tablón de Gómez": "Norte", "Albán (San José)": "Norte", "San Bernardo": "Norte", "Belén": "Norte", "Colón (Génova)": "Norte", "La Cruz": "Norte", "San Pablo": "Norte",
-            "Sandoná": "Occidente", "Linares": "Occidente", "Consacá": "Occidente", "Ancuyá": "Occidente",
-            "Tumaco": "Pacífico Sur", "Francisco Pizarro": "Pacífico Sur",
-            "Ricaurte": "Piedemonte Costero", "Mallama": "Piedemonte Costero",
-            "El Charco": "Sanquianga", "La Tola": "Sanquianga", "Mosquera": "Sanquianga", "Olaya Herrera": "Sanquianga", "Santa Bárbara": "Sanquianga",
-            "Barbacoas": "Telembí", "Magüí Payán": "Telembí", "Roberto Payán": "Telembí"
-        };
-
-        function actualizarSubregion() {
-            const municipio = document.getElementById('municipio').value;
-            const campoSubregion = document.getElementById('subregion');
-            if (municipio && subregiones[municipio]) { campoSubregion.value = subregiones[municipio]; } 
-            else { campoSubregion.value = ""; }
-        }
-
-        function mostrarOtro() {
-            const tipo = document.getElementById('tipo').value;
-            const divOtro = document.getElementById('div-otro-tipo');
-            if (tipo === 'Otro') { divOtro.style.display = 'block'; } 
-            else { divOtro.style.display = 'none'; divOtro.querySelector('input').value = ''; }
-        }
-
-        function obtenerUbicacion() {
-            const status = document.getElementById('gps-status');
-            if (navigator.geolocation) {
-                status.innerText = "Obteniendo coordenadas...";
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        document.getElementById('latitud').value = position.coords.latitude;
-                        document.getElementById('longitud').value = position.coords.longitude;
-                        document.getElementById('gps_automatico').value = 'false';
-                        status.innerText = "✅ Coordenadas reales capturadas.";
-                    },
-                    (error) => { status.innerText = "❌ Error al capturar GPS. Se usará la cabecera municipal."; }
-                );
-            } else { status.innerText = "❌ Tu navegador no soporta GPS."; }
-        }
-
-        // Si el líder no captura GPS, inyecta la cabecera municipal
-        function inyectarCoordenadas() {
-            const lat = document.getElementById('latitud').value;
-            const municipio = document.getElementById('municipio').value;
-
-            if (!lat && municipio) {
-                const coords = coordsCabeceras[municipio];
-                if (coords) {
-                    document.getElementById('latitud').value = coords[0];
-                    document.getElementById('longitud').value = coords[1];
-                    document.getElementById('gps_automatico').value = 'true';
-                } else {
-                    // Si el municipio no está en el diccionario (por si acaso), usa Pasto
-                    document.getElementById('latitud').value = 1.2136;
-                    document.getElementById('longitud').value = -77.2811;
-                    document.getElementById('gps_automatico').value = 'true';
-                }
-            }
-        }
-    </script>
-</body>
-</html>
+const coordsCabeceras = {
+    "Pasto": [1.212352, -77.278795],
+    "Albán (San José)": [1.474978, -77.080712],
+    "Aldana": [0.882381, -77.700564],
+    "Ancuyá": [1.263276, -77.514512],
+    "Arboleda": [1.503418, -77.135467],
+    "Barbacoas": [1.671733, -78.13765],
+    "Belén": [1.595681, -77.015619],
+    "Buesaco": [1.381453, -77.156463],
+    "Colón (Génova)": [1.643878, -77.019777],
+    "Consacá": [1.207854, -77.466136],
+    "Contadero": [0.910458, -77.549409],
+    "Córdoba": [0.854564, -77.517897],
+    "Cuaspud": [0.862978, -77.728947],
+    "Cumbal": [0.906367, -77.792505],
+    "Cumbitara": [1.647163, -77.578616],
+    "Chachagüí": [1.360545, -77.281869],
+    "El Charco": [2.479688, -78.110217],
+    "El Peñol": [1.453567, -77.438522],
+    "El Rosario": [1.745309, -77.33417],
+    "El Tablón de Gómez": [1.427277, -77.097101],
+    "El Tambo": [1.407913, -77.390772],
+    "Funes": [1.001159, -77.448913],
+    "Guachucal": [0.959744, -77.731589],
+    "Guaitarilla": [1.129574, -77.549824],
+    "Gualmatán": [0.919652, -77.568701],
+    "Iles": [0.96952, -77.521227],
+    "Imués": [1.05506, -77.496339],
+    "Ipiales": [0.827732, -77.646367],
+    "La Cruz": [1.601318, -76.970504],
+    "La Florida": [1.29753, -77.402882],
+    "La Llanada": [1.472892, -77.58091],
+    "La Tola": [2.398999, -78.189725],
+    "La Unión": [1.600219, -77.131316],
+    "Leiva": [1.934453, -77.306135],
+    "Linares": [1.350814, -77.523953],
+    "Los Andes (Sotomayor)": [1.494587, -77.521303],
+    "Magüí Payán": [1.765633, -78.182924],
+    "Mallama": [1.141037, -77.864549],
+    "Mosquera": [2.507139, -78.452992],
+    "Nariño": [1.288979, -77.357972],
+    "Olaya Herrera": [2.347457, -78.325814],
+    "Ospina": [1.058433, -77.566082],
+    "Francisco Pizarro": [2.040629, -78.658361],
+    "Policarpa": [1.627196, -77.458686],
+    "Potosí": [0.806639, -77.573003],
+    "Providencia": [1.237814, -77.596794],
+    "Puerres": [0.885125, -77.504211],
+    "Pupiales": [0.870442, -77.636042],
+    "Ricaurte": [1.212492, -77.995153],
+    "Roberto Payán": [1.697492, -78.245716],
+    "Samaniego": [1.335438, -77.594341],
+    "San Bernardo": [1.513762, -77.0475],
+    "San Lorenzo": [1.503362, -77.21542],
+    "San Pablo": [1.669429, -77.013984],
+    "San Pedro de Cartago": [1.551572, -77.11941],
+    "Sandoná": [1.283438, -77.47313],
+    "Santa Bárbara": [2.449653, -77.979916],
+    "Santa Cruz": [1.222589, -77.677035],
+    "Sapuyes": [1.037536, -77.62028],
+    "Taminango": [1.570358, -77.2808],
+    "Tangua": [1.09482, -77.393735],
+    "Tumaco": [1.807399, -78.764073],
+    "Túquerres": [1.085044, -77.61672],
+    "Yacuanquer": [1.115937, -77.400169]
+};
